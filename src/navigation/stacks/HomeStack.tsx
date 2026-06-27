@@ -4,6 +4,7 @@ import { HomeStackParamList } from '../types';
 import HomeScreen from '../../screens/home/HomeScreen';
 import NotificationsScreen from '../../screens/home/NotificationsScreen';
 import SearchScreen from '../../screens/home/SearchScreen';
+import ListingScreen from '../../screens/shop/ListingScreen';
 import ProductScreen from '../../screens/shop/ProductScreen';
 import CartScreen from '../../screens/shop/CartScreen';
 import CheckoutStep1Screen from '../../screens/shop/CheckoutStep1Screen';
@@ -20,6 +21,7 @@ export default function HomeStack() {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="Listing" component={ListingScreen} />
       <Stack.Screen name="Product" component={ProductScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="Checkout1" component={CheckoutStep1Screen} />

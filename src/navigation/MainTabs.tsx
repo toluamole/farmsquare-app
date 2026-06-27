@@ -56,8 +56,8 @@ export default function MainTabs() {
     >
       <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Home' }} />
       <Tab.Screen name="ShopTab" component={ShopStack} options={{ title: 'Shop' }} />
-      <Tab.Screen name="GroupBuyTab" component={GroupBuyStack} options={{ title: 'Group Buy' }} />
-      <Tab.Screen name="AdvisoryTab" component={AdvisoryStack} options={{ title: 'Advisory' }} />
+      {/* <Tab.Screen name="GroupBuyTab" component={GroupBuyStack} options={{ title: 'Group Buy' }} />
+      <Tab.Screen name="AdvisoryTab" component={AdvisoryStack} options={{ title: 'Advisory' }} /> */}
       <Tab.Screen name="AccountTab" component={AccountStack} options={{ title: 'Account' }} />
     </Tab.Navigator>
   );

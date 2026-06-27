@@ -43,6 +43,16 @@ export const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }).concat(wooApi.middleware),
+  // Attach the Reactotron enhancer in development only — excluded from
+  // production bundles via the `__DEV__` guard.
+  enhancers: getDefaultEnhancers => {
+    if (__DEV__) {
+      const reactotron = require('../config/reactotron').default;
+      const enhancer = reactotron?.createEnhancer?.();
+      if (enhancer) return getDefaultEnhancers().concat(enhancer);
+    }
+    return getDefaultEnhancers();
+  },
 });
 
 setupListeners(store.dispatch);

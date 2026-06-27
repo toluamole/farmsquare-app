@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
 import { FS_CATEGORIES } from '../../data/products';
-import { useGetProductsQuery } from '../../store/api/wooApi';
+import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
 import { FS_DEALS } from '../../data/deals';
-import FsCarousel from '../../components/common/FsCarousel';
-import AdSlide from '../../components/common/AdSlide';
+// import FsCarousel from '../../components/common/FsCarousel';
+// import AdSlide from '../../components/common/AdSlide';
 import FsBadge from '../../components/common/FsBadge';
 import FsProgress from '../../components/common/FsProgress';
 import FsMiniCard from '../../components/common/FsMiniCard';
@@ -66,6 +66,8 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
   const { auth, cartCount, cropSetup, t0 } = app;
 
   const { data: products = [] } = useGetProductsQuery();
+  // Live WooCommerce categories; falls back to FS_CATEGORIES via the service layer.
+  const { data: categories = FS_CATEGORIES } = useGetCategoriesQuery();
   const activeDeals = FS_DEALS.filter(d => d.status === 'active');
   const flashProducts = products.filter(p => p.was);
 
@@ -129,7 +131,7 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
         </View> */}
 
         {/* Active Group Buy Deals */}
-        <View className="flex-row items-center justify-between px-4 mb-3">
+        {/* <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="font-m-bold text-[15px] text-ink">Active Group Buy Deals</Text>
           <Pressable onPress={() => navigation.getParent()?.navigate('GroupBuyTab', { screen: 'GroupBuy' })}>
             <Text className="font-p-medium text-[12px] text-green">See all →</Text>
@@ -139,10 +141,10 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
           {activeDeals.map(deal => (
             <DealCard key={deal.id} deal={deal} t0={t0} onPress={() => navigation.getParent()?.navigate('GroupBuyTab', { screen: 'DealDetail', params: { id: deal.id } })} />
           ))}
-        </ScrollView>
+        </ScrollView> */}
 
         {/* Today on Your Farm */}
-        <View className="flex-row items-center justify-between px-4 mb-3">
+        {/* <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="font-m-bold text-[15px] text-ink">Today on Your Farm</Text>
         </View>
         <View className="px-4 mb-6">
@@ -169,14 +171,14 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
               <Text className="font-p-medium text-[13.5px] text-green">Set up your first crop →</Text>
             </Pressable>
           )}
-        </View>
+        </View> */}
 
         {/* Shop by Category */}
         <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="font-m-bold text-[15px] text-ink">Shop by Category</Text>
         </View>
         <View className="flex-row flex-wrap px-4 gap-[10px] mb-6">
-          {FS_CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <Pressable key={cat.id} className="w-[30%] items-center bg-card rounded-md py-[14px] border border-line" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
               <View className="mb-[6px]">
                 <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={26} color={colors.green} strokeWidth={1.9} />

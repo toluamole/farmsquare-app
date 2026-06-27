@@ -51,6 +51,8 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "reactotron-react-native": "^5.2.0",
+    "reactotron-redux": "^3.2.1",
     "typescript": "^5.3.3"
   },
   "overrides": {

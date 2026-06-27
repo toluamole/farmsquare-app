@@ -1,6 +1,8 @@
 // Must be imported before any code that constructs URL objects (e.g. Firebase),
 // since React Native's built-in URL global lacks a complete implementation.
 import 'react-native-url-polyfill/auto';
+// Initialize Reactotron before the store is created (dev only).
+import './src/config/reactotron';
 import './global.css';
 import React from 'react';
 import { Text, View, ActivityIndicator } from 'react-native';

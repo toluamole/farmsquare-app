@@ -14,6 +14,7 @@ export type HomeStackParamList = {
   Home: undefined;
   Notifications: undefined;
   Search: undefined;
+  Listing: { cat?: string; flash?: boolean };
   Product: { id: string };
   Cart: undefined;
   Checkout1: undefined;
