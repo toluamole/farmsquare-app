@@ -9,7 +9,7 @@ import { FS_CROPS, fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
 import ScreenHeader from '../../components/layout/ScreenHeader';
-import { FS_DIAGNOSES, FS_PROBLEM_CATS } from './diagnoses';
+import { PROBLEM_CATEGORIES, Diagnosis } from '../../services/diagnosis';
 
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
 
@@ -21,11 +21,12 @@ const cropLabel = (id: string) => {
 const confidenceTone = (pct: number): 'green' | 'amber' | 'gray' => (pct >= 80 ? 'green' : pct >= 50 ? 'amber' : 'gray');
 
 export default function ResultsScreen({ navigation, route }: { navigation: any; route: any }) {
-  const { crop, category } = route.params as { crop: string; category: string };
+  const { crop, category, results } = route.params as { crop: string; category: string; results?: Diagnosis[] };
+  const diagnoses: Diagnosis[] = results ?? [];
   const { addToCart, toast } = useApp();
   const [openTreatment, setOpenTreatment] = useState<string | null>(null);
 
-  const catLabel = FS_PROBLEM_CATS.find(c => c.id === category)?.label || category;
+  const catLabel = PROBLEM_CATEGORIES.find(c => c.id === category)?.label || category;
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
@@ -33,10 +34,22 @@ export default function ResultsScreen({ navigation, route }: { navigation: any; 
       <ScreenHeader title="Diagnosis Results" subtitle={`${cropLabel(crop)} · ${catLabel}`} />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4" showsVerticalScrollIndicator={false}>
-        <Text className="font-m-bold text-[18px] text-ink leading-6">We found {FS_DIAGNOSES.length} possible matches</Text>
-        <Text className="font-p-regular text-[11.5px] text-sub leading-[17px] mt-1 mb-[14px]">Start with the highest confidence match and confirm the symptoms.</Text>
+        {diagnoses.length > 0 ? (
+          <>
+            <Text className="font-m-bold text-[18px] text-ink leading-6">We found {diagnoses.length} possible matches</Text>
+            <Text className="font-p-regular text-[11.5px] text-sub leading-[17px] mt-1 mb-[14px]">Start with the highest confidence match and confirm the symptoms.</Text>
+          </>
+        ) : (
+          <View className="bg-card border border-line rounded-md p-[18px] items-center mb-3">
+            <View className="w-12 h-12 rounded-full bg-limeTint items-center justify-center mb-[10px]">
+              <Icon name="Microscope" size={22} color={colors.green} />
+            </View>
+            <Text className="font-m-bold text-[15px] text-ink text-center">Automated diagnosis isn’t available yet</Text>
+            <Text className="font-p-regular text-[11.5px] text-sub text-center leading-[17px] mt-[6px]">We couldn’t generate matches for this problem. Talk to an agronomist below and we’ll help you directly.</Text>
+          </View>
+        )}
 
-        {FS_DIAGNOSES.map((dx, i) => {
+        {diagnoses.map((dx, i) => {
           const treatmentOpen = openTreatment === dx.id;
           const products = dx.products.map(fsProduct).filter(Boolean);
           return (

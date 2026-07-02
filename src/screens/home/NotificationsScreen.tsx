@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 import { cn } from '../../lib/utils';
-import { FS_NOTIFS } from '../../data/products';
+import { getNotifications, AppNotification } from '../../services/notifications';
 import FsChip from '../../components/common/FsChip';
+import FsEmpty from '../../components/common/FsEmpty';
 import Icon, { IconName } from '../../components/common/Icon';
 
 const TONE_ICON: Record<string, IconName> = {
@@ -26,10 +27,20 @@ const FILTER_OPTS = ['All', 'Deals', 'Farm', 'Orders'];
 export default function NotificationsScreen({ navigation }: { navigation: any }) {
   const [filter, setFilter] = useState('All');
   const [read, setRead] = useState<Set<number>>(new Set());
+  const [notifs, setNotifs] = useState<AppNotification[]>([]);
+  const [isLoading, setLoading] = useState(true);
 
-  const markAllRead = () => setRead(new Set(FS_NOTIFS.map((_, i) => i)));
+  useEffect(() => {
+    let active = true;
+    getNotifications()
+      .then(n => { if (active) setNotifs(n); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-  const filtered = FS_NOTIFS.filter(n => {
+  const markAllRead = () => setRead(new Set(notifs.map((_, i) => i)));
+
+  const filtered = notifs.filter(n => {
     if (filter === 'All') return true;
     if (filter === 'Deals') return n.tone === 'amber' || n.tone === 'blue';
     if (filter === 'Farm') return n.tone === 'green' && n.icon === 'leaf';
@@ -64,6 +75,17 @@ export default function NotificationsScreen({ navigation }: { navigation: any })
         ))}
       </ScrollView>
 
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.green} />
+        </View>
+      ) : notifs.length === 0 ? (
+        <FsEmpty
+          icon="box"
+          title="No notifications yet"
+          sub="Deal alerts, order updates and farm reminders will show up here."
+        />
+      ) : (
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {groups.map(group => {
           const items = filtered.filter(n => n.group === group);
@@ -72,7 +94,7 @@ export default function NotificationsScreen({ navigation }: { navigation: any })
             <View key={group}>
               <Text className="font-p-semibold text-[11px] text-faint tracking-[0.5px] uppercase px-4 pt-4 pb-[6px]">{group}</Text>
               {items.map((n, idx) => {
-                const globalIdx = FS_NOTIFS.indexOf(n);
+                const globalIdx = notifs.indexOf(n);
                 const isRead = read.has(globalIdx) || !n.unread;
                 return (
                   <Pressable
@@ -100,6 +122,7 @@ export default function NotificationsScreen({ navigation }: { navigation: any })
         })}
         <View style={{ height: 32 }} />
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

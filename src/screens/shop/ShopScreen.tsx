@@ -4,12 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { FS_CATEGORIES } from '../../data/products';
 import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
 import FsCarousel from '../../components/common/FsCarousel';
 import AdSlide from '../../components/common/AdSlide';
 import FsMiniCard from '../../components/common/FsMiniCard';
 import FsButton from '../../components/common/FsButton';
+import FsEmpty from '../../components/common/FsEmpty';
 import Icon, { IconName } from '../../components/common/Icon';
 
 const CATEGORY_ICONS: Record<string, IconName> = {
@@ -21,8 +21,8 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
   const app = useApp();
   const { cartCount } = app;
 
-  const { data: products = [], isLoading } = useGetProductsQuery();
-  const { data: categories = FS_CATEGORIES } = useGetCategoriesQuery();
+  const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
+  const { data: categories = [] } = useGetCategoriesQuery();
 
   // Derive the homepage rails from the live catalog (falls back to mock data
   // via the service layer when WC credentials are absent).
@@ -66,19 +66,23 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
         </View> */}
 
         {/* Categories */}
-        <View className="flex-row items-center justify-between px-4 mb-3">
-          <Text className="font-m-bold text-[15px] text-ink">Categories</Text>
-        </View>
-        <View className="flex-row flex-wrap px-4 gap-[10px] mb-6">
-          {categories.map(cat => (
-            <Pressable key={cat.id} className="w-[30%] items-center bg-card rounded-md py-[14px] border border-line" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
-              <View className="mb-[6px]">
-                <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={24} color={colors.green} strokeWidth={1.9} />
-              </View>
-              <Text className="font-p-medium text-[11px] text-ink text-center">{cat.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {categories.length > 0 && (
+          <>
+            <View className="flex-row items-center justify-between px-4 mb-3">
+              <Text className="font-m-bold text-[15px] text-ink">Categories</Text>
+            </View>
+            <View className="flex-row flex-wrap px-4 gap-[10px] mb-6">
+              {categories.map(cat => (
+                <Pressable key={cat.id} className="w-[30%] items-center bg-card rounded-md py-[14px] border border-line" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
+                  <View className="mb-[6px]">
+                    <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={24} color={colors.green} strokeWidth={1.9} />
+                  </View>
+                  <Text className="font-p-medium text-[11px] text-ink text-center">{cat.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Loading state for the live catalog */}
         {isLoading && products.length === 0 && (
@@ -86,6 +90,17 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
             <ActivityIndicator color={colors.green} />
             <Text className="font-p-regular text-[12px] text-sub mt-2">Loading products…</Text>
           </View>
+        )}
+
+        {/* Error state for the live catalog */}
+        {isError && products.length === 0 && (
+          <FsEmpty
+            icon="box"
+            title="Couldn't load products"
+            sub="We couldn't reach the store. Check your connection and try again."
+            action="Retry"
+            onAction={() => refetch()}
+          />
         )}
 
         {/* New Arrivals */}

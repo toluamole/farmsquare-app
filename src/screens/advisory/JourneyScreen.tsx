@@ -1,72 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StatusBar, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StatusBar, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors, shadows } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import * as advisoryData from '../../data/advisory';
-import { FS_JOURNEY_CROP, FS_CROP_TIMINGS, fsJourneyFor, JourneyStage } from '../../data/advisory';
+import { getCropJourney, cropLabel, JourneyResult } from '../../services/advisory';
 import { fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
+import FsEmpty from '../../components/common/FsEmpty';
 import FsProgress from '../../components/common/FsProgress';
 import ScreenHeader from '../../components/layout/ScreenHeader';
 import BottomSheet from '../../components/layout/BottomSheet';
 import { STAGE_IMAGES } from './stageImages';
 
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
-const DAY_MS = 86400000;
 const fmtDate = (d: Date) => d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
 const fmtDateFull = (d: Date) => d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 const toISO = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-
-type StageWithStatus = JourneyStage & { status: 'done' | 'current' | 'upcoming'; fromDate: Date; toDate: Date };
-
-function computeJourney(base: JourneyStage[], dateISO: string) {
-  const day0 = new Date(dateISO + 'T12:00:00');
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  const todayOffset = Math.floor((today.getTime() - day0.getTime()) / DAY_MS);
-  const stages: StageWithStatus[] = base.map(s => ({
-    ...s,
-    status: todayOffset > s.to ? 'done' : todayOffset >= s.from ? 'current' : 'upcoming',
-    fromDate: new Date(day0.getTime() + s.from * DAY_MS),
-    toDate: new Date(day0.getTime() + s.to * DAY_MS),
-  }));
-  return { stages, todayOffset, day0 };
-}
 
 export default function JourneyScreen({ navigation, route }: { navigation: any; route: any }) {
   const { cropId, plantingDate } = route.params as { cropId: string; plantingDate: string };
   const { addToCart } = useApp();
 
-  const isPoultry = cropId === 'poultry' || cropId === 'broiler';
-  const poultryStages: JourneyStage[] | undefined = (advisoryData as any).FS_JOURNEY_POULTRY;
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [dateSheet, setDateSheet] = useState(false);
+  const [journey, setJourney] = useState<JourneyResult>(() => ({
+    stages: [],
+    todayOffset: 0,
+    day0: new Date(plantingDate + 'T12:00:00'),
+  }));
+  const [loading, setLoading] = useState(true);
 
-  const label = isPoultry ? 'Poultry (Broilers)' : FS_CROP_TIMINGS[cropId]?.label || cropId.charAt(0).toUpperCase() + cropId.slice(1);
-
-  const journey =
-    isPoultry && Array.isArray(poultryStages) && poultryStages.length > 0
-      ? computeJourney(poultryStages, plantingDate)
-      : !isPoultry
-        ? fsJourneyFor({ id: cropId, kind: 'crop', label, icon: 'seedling' }, plantingDate)
-        : computeJourney(FS_JOURNEY_CROP, plantingDate);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getCropJourney(cropId, plantingDate)
+      .then(r => { if (active) setJourney(r); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [cropId, plantingDate]);
 
   const { stages, todayOffset, day0 } = journey;
-  const daysElapsed = todayOffset;
-
-  const doneCount = stages.filter(s => s.status === 'done').length;
-  const pct = Math.round((doneCount / stages.length) * 100);
-  const current = stages.find(s => s.status === 'current');
-  const currentIdx = current ? stages.findIndex(s => s.id === current.id) : Math.min(doneCount, stages.length - 1);
-
-  const [openId, setOpenId] = useState<string | null>(current ? current.id : null);
-  const [dateSheet, setDateSheet] = useState(false);
-
+  const label = cropLabel(cropId);
+  const isPoultry = cropId === 'poultry' || cropId === 'broiler';
   const dateWord = isPoultry ? 'Stocked' : 'Planted';
   const futureWord = isPoultry ? 'Stocking' : 'Planting';
   const dateNoun = isPoultry ? 'stocking date' : 'planting date';
+  const daysElapsed = todayOffset;
 
   const pickDate = (offsetDays: number) => {
     const d = new Date();
@@ -77,6 +59,37 @@ export default function JourneyScreen({ navigation, route }: { navigation: any; 
   };
 
   const quickPicks: [string, number][] = [['Today', 0], ['1 week ago', -7], ['1 month ago', -30]];
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+        <ScreenHeader title={`${label} Journey`} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.green} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (stages.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+        <ScreenHeader title={`${label} Journey`} />
+        <FsEmpty
+          icon="leaf"
+          title="Growing guide coming soon"
+          sub={`We're preparing the stage-by-stage ${label} guide. Check back shortly.`}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const doneCount = stages.filter(s => s.status === 'done').length;
+  const pct = Math.round((doneCount / stages.length) * 100);
+  const current = stages.find(s => s.status === 'current');
+  const currentIdx = current ? stages.findIndex(s => s.id === current.id) : Math.min(doneCount, stages.length - 1);
 
   const statusBadge = (status: 'done' | 'current' | 'upcoming') => {
     if (status === 'done') return <FsBadge tone="green">PASSED</FsBadge>;

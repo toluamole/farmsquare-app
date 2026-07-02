@@ -3,29 +3,19 @@ import { View, Text, ScrollView, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, shadows } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import FsProgress from '../../components/common/FsProgress';
-import FsBadge from '../../components/common/FsBadge';
+import { cropLabel } from '../../services/advisory';
 import FsEmpty from '../../components/common/FsEmpty';
 import FsButton from '../../components/common/FsButton';
 import Icon from '../../components/common/Icon';
 
-const defaultCrops = [
-  {
-    id: 'tomato',
-    label: 'Tomato',
-    plantingDate: '2026-05-12',
-    currentStage: 'Flowering',
-    week: 4,
-    pct: 38,
-    todayTask: 'Stake your tomato plants',
-  },
-];
+const toISO = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
 export default function MyFarmScreen({ navigation }: { navigation: any }) {
   const app = useApp();
   const { profile } = app;
 
-  const hasCrops = profile.crops && profile.crops.length > 0;
+  const crops = profile.crops || [];
+  const hasCrops = crops.length > 0;
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
@@ -43,7 +33,7 @@ export default function MyFarmScreen({ navigation }: { navigation: any }) {
             <FsEmpty
               icon="leaf"
               title="Set up your farm profile"
-              sub="Add your crops to get a personalised planting calendar and daily task reminders."
+              sub="Add your crops to get a planting calendar and stage-by-stage guidance."
               action="Set up now"
               onAction={() => navigation.navigate('ProfileCrops')}
             />
@@ -52,40 +42,21 @@ export default function MyFarmScreen({ navigation }: { navigation: any }) {
           <View className="p-4">
             <Text className="font-p-semibold text-[11px] text-sub tracking-[0.5px] uppercase mb-3">Your enterprises</Text>
 
-            {defaultCrops.map(crop => (
+            {crops.map(cropId => (
               <Pressable
-                key={crop.id}
-                className="bg-card rounded-md border border-line p-4 mb-3"
+                key={cropId}
+                className="bg-card rounded-md border border-line p-4 mb-3 flex-row items-center gap-3"
                 style={shadows.card}
-                onPress={() => navigation.navigate('Journey', { cropId: crop.id, plantingDate: crop.plantingDate })}
+                onPress={() => navigation.navigate('Journey', { cropId, plantingDate: toISO(new Date()) })}
               >
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center flex-1 gap-3">
-                    <View className="w-[52px] h-[52px] bg-limeTint rounded-sm items-center justify-center">
-                      <Icon name="Sprout" size={26} color={colors.green} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-m-bold text-[16px] text-ink mb-[5px]">{crop.label}</Text>
-                      <View className="flex-row">
-                        <FsBadge tone="green">WEEK {crop.week} — {crop.currentStage.toUpperCase()}</FsBadge>
-                      </View>
-                    </View>
-                  </View>
-                  <Icon name="ChevronRight" size={20} color={colors.faint} />
+                <View className="w-[52px] h-[52px] bg-limeTint rounded-sm items-center justify-center">
+                  <Icon name="Sprout" size={26} color={colors.green} />
                 </View>
-
-                <View className="flex-row items-center gap-[7px] bg-limeTint rounded-sm px-[10px] py-2 mb-3">
-                  <Icon name="ClipboardList" size={15} color={colors.sub} />
-                  <Text className="font-p-medium text-[12.5px] text-green flex-1" numberOfLines={1}>{crop.todayTask}</Text>
+                <View className="flex-1">
+                  <Text className="font-m-bold text-[16px] text-ink mb-[3px]">{cropLabel(cropId)}</Text>
+                  <Text className="font-p-regular text-[11.5px] text-sub">View growing guide</Text>
                 </View>
-
-                <View className="gap-[6px]">
-                  <FsProgress pct={crop.pct} h={6} />
-                  <View className="flex-row justify-between">
-                    <Text className="font-p-regular text-[10.5px] text-sub">Season progress</Text>
-                    <Text className="font-p-semibold text-[10.5px] text-green">{crop.pct}%</Text>
-                  </View>
-                </View>
+                <Icon name="ChevronRight" size={20} color={colors.faint} />
               </Pressable>
             ))}
 

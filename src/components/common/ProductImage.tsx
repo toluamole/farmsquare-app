@@ -2,7 +2,6 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { colors, radius } from '../../theme';
-import { FS_PRODUCTS } from '../../data/products';
 import {
   PRODUCT_IMAGES,
   CATEGORY_IMAGES,
@@ -10,11 +9,6 @@ import {
   CATEGORY_VISUAL,
 } from '../../data/productImages';
 import Icon, { IconName } from './Icon';
-
-// id -> category for resolving the placeholder icon from just a productId.
-const PRODUCT_CAT: Record<string, string> = Object.fromEntries(
-  FS_PRODUCTS.map(p => [p.id, p.cat]),
-);
 
 const DEFAULT_VISUAL = { icon: 'Package' as IconName, bg: colors.field, tint: colors.sub };
 
@@ -45,9 +39,8 @@ export default function ProductImage({ productId, category, style, imageUrl }: P
     );
   }
 
-  // 2) Branded icon placeholder, colored by the product's category.
-  const cat = category || (productId ? PRODUCT_CAT[productId] : undefined);
-  const visual = (cat && CATEGORY_VISUAL[cat]) || DEFAULT_VISUAL;
+  // 2) Branded icon placeholder, colored by the product's category when known.
+  const visual = (category && CATEGORY_VISUAL[category]) || DEFAULT_VISUAL;
 
   return (
     <View style={[styles.container, { backgroundColor: visual.bg }, style]}>

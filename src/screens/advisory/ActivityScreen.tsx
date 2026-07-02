@@ -1,58 +1,71 @@
-import React from 'react';
-import { View, Text, ScrollView, StatusBar, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StatusBar, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import * as advisoryData from '../../data/advisory';
-import { FS_JOURNEY_CROP, FS_CROP_TIMINGS, fsJourneyFor, JourneyStage } from '../../data/advisory';
+import { getCropStage, cropLabel, StageWithStatus } from '../../services/advisory';
 import { fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
+import FsEmpty from '../../components/common/FsEmpty';
 import ScreenHeader from '../../components/layout/ScreenHeader';
 import { STAGE_IMAGES } from './stageImages';
 
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
-
-const DAY_MS = 86400000;
-
 const fmtDate = (d: Date) => d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function ActivityScreen({ navigation, route }: { navigation: any; route: any }) {
   const { stageId, cropId, plantingDate } = route.params as { stageId: string; cropId: string; plantingDate: string };
   const { toast, addToCart } = useApp();
 
-  const isPoultry = cropId === 'poultry' || cropId === 'broiler';
-  const poultryStages: JourneyStage[] | undefined = (advisoryData as any).FS_JOURNEY_POULTRY;
+  const label = cropLabel(cropId);
+  const [stage, setStage] = useState<StageWithStatus | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
 
-  const label = isPoultry ? 'Poultry (Broilers)' : FS_CROP_TIMINGS[cropId]?.label || cropId.charAt(0).toUpperCase() + cropId.slice(1);
-
-  let stage: (JourneyStage & { fromDate: Date; toDate: Date; status?: string }) | undefined;
-  if (isPoultry && Array.isArray(poultryStages) && poultryStages.length > 0) {
-    const day0 = new Date(plantingDate + 'T12:00:00');
-    const base = poultryStages.find(s => s.id === stageId);
-    if (base) {
-      stage = { ...base, fromDate: new Date(day0.getTime() + base.from * DAY_MS), toDate: new Date(day0.getTime() + base.to * DAY_MS) };
-    }
-  } else {
-    const { stages } = fsJourneyFor({ id: cropId, kind: 'crop', label, icon: 'seedling' }, plantingDate);
-    stage = stages.find(s => s.id === stageId);
-  }
-  if (!stage) {
-    const day0 = new Date(plantingDate + 'T12:00:00');
-    const base = FS_JOURNEY_CROP.find(s => s.id === stageId) || FS_JOURNEY_CROP[0];
-    stage = { ...base, fromDate: new Date(day0.getTime() + base.from * DAY_MS), toDate: new Date(day0.getTime() + base.to * DAY_MS) };
-  }
-
-  const window = fmtDate(stage.fromDate) + (stage.to !== stage.from ? ' – ' + fmtDate(stage.toDate) : '');
-
-  const inputs = stage.inputs.map(fsProduct).filter(Boolean);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getCropStage(cropId, stageId, plantingDate)
+      .then(s => { if (active) setStage(s); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [cropId, stageId, plantingDate]);
 
   const markDone = () => {
     toast('Great work! Stage marked as done');
     navigation.goBack();
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+        <ScreenHeader title="Stage Guide" subtitle={label} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.green} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!stage) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+        <ScreenHeader title="Stage Guide" subtitle={label} />
+        <FsEmpty
+          icon="leaf"
+          title="Stage guide coming soon"
+          sub={`We're preparing the ${label} growing guide. Check back shortly.`}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const window = fmtDate(stage.fromDate) + (stage.to !== stage.from ? ' – ' + fmtDate(stage.toDate) : '');
+  const inputs = stage.inputs.map(fsProduct).filter(Boolean);
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>

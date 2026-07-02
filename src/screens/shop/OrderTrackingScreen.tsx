@@ -2,13 +2,13 @@ import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
-import { useApp, Order } from '../../context/AppContext';
-import { fsProduct } from '../../data/products';
+import { useApp } from '../../context/AppContext';
 import { useGetOrderQuery } from '../../store/api/wooApi';
 import ScreenHeader from '../../components/layout/ScreenHeader';
 import ProductImage from '../../components/common/ProductImage';
 import FsBadge from '../../components/common/FsBadge';
 import FsButton from '../../components/common/FsButton';
+import FsEmpty from '../../components/common/FsEmpty';
 
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
 
@@ -28,18 +28,21 @@ const STATUS_STEP: Record<string, number> = {
 export default function OrderTrackingScreen({ route }: { navigation: any; route: any }) {
   const app = useApp();
 
-  const fallback: Order = {
-    id: route.params?.id || 'FS-20431',
-    items: [{ p: fsProduct('p7')!, qty: 1 }],
-    total: 19500,
-    step: 1,
-    date: 'June 10, 2026',
-  };
-  const order = app.orders.find(o => o.id === route.params?.id) || app.orders[0] || fallback;
+  const order = app.orders.find(o => o.id === route.params?.id) || app.orders[0];
 
   // Pull live status from WooCommerce; fall back to the locally stored step
   // (e.g. offline or when WC credentials are absent).
-  const { data: wcOrder } = useGetOrderQuery(order.id, { skip: !order.id });
+  const { data: wcOrder } = useGetOrderQuery(order?.id ?? '', { skip: !order?.id });
+
+  if (!order) {
+    return (
+      <View className="flex-1 bg-bg">
+        <ScreenHeader title="Order tracking" />
+        <FsEmpty icon="box" title="Order not found" sub="We couldn't find this order. Check My Orders for your order history." />
+      </View>
+    );
+  }
+
   const liveStep = wcOrder?.status ? STATUS_STEP[wcOrder.status] : undefined;
   const stepNum = liveStep ?? order.step ?? 1;
   const cur = Math.min(STEPS.length - 1, Math.max(0, stepNum - 1));

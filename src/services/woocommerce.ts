@@ -1,9 +1,9 @@
 import axios, { AxiosInstance } from 'axios';
-import { FS_PRODUCTS, FS_CATEGORIES, Product, Category } from '../data/products';
+import { Product } from '../data/products';
 
-const WC_URL = process.env.EXPO_PUBLIC_WC_URL || 'https://farmsquare.ng';
-const WC_KEY = process.env.EXPO_PUBLIC_WC_KEY || '';
-const WC_SECRET = process.env.EXPO_PUBLIC_WC_SECRET || '';
+export const WC_URL = process.env.EXPO_PUBLIC_WC_URL || 'https://farmsquare.ng';
+export const WC_KEY = process.env.EXPO_PUBLIC_WC_KEY || '';
+export const WC_SECRET = process.env.EXPO_PUBLIC_WC_SECRET || '';
 
 let _client: AxiosInstance | null = null;
 
@@ -75,67 +75,27 @@ async function tryApi<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-export async function getProducts(params?: Record<string, string | number>): Promise<Product[]> {
-  return tryApi(async () => {
-    const client = getClient();
-    const response = await client.get<WCProduct[]>('/products', { params: { per_page: 50, ...params } });
-    // Map WC products to our format
-    return response.data.map(p => ({
-      id: String(p.id),
-      cat: p.categories[0]?.slug || 'seeds',
-      name: p.name,
-      price: Math.round(parseFloat(p.price) || 0),
-      was: p.regular_price !== p.sale_price ? Math.round(parseFloat(p.regular_price) || 0) : undefined,
-      img: p.images[0]?.src || null,
-      imgLabel: p.images[0]?.alt || p.name,
-      rating: parseFloat(p.average_rating) || 4.5,
-      reviews: p.rating_count || 0,
-      stock: p.stock_status === 'instock' ? 'in' : p.stock_status === 'outofstock' ? 'out' : 'low',
-      sku: p.slug,
-      desc: p.short_description || p.description,
-      specs: p.attributes.map(a => [a.name, a.options.join(', ')] as [string, string]),
-      related: [],
-    } as Product));
-  }, FS_PRODUCTS);
+export function mapProduct(p: WCProduct): Product {
+  return {
+    id: String(p.id),
+    cat: p.categories[0]?.slug || 'seeds',
+    name: p.name,
+    price: Math.round(parseFloat(p.price) || 0),
+    was: p.regular_price !== p.sale_price ? Math.round(parseFloat(p.regular_price) || 0) : undefined,
+    img: p.images[0]?.src || null,
+    imgLabel: p.images[0]?.alt || p.name,
+    rating: parseFloat(p.average_rating) || 4.5,
+    reviews: p.rating_count || 0,
+    stock: p.stock_status === 'instock' ? 'in' : p.stock_status === 'outofstock' ? 'out' : 'low',
+    sku: p.slug,
+    desc: p.short_description || p.description,
+    specs: p.attributes.map(a => [a.name, a.options.join(', ')] as [string, string]),
+    related: [],
+  } as Product;
 }
 
-export async function getProduct(id: string): Promise<Product | undefined> {
-  // Try local first for mock IDs
-  const local = FS_PRODUCTS.find(p => p.id === id);
-  if (!WC_KEY || !WC_SECRET) return local;
-
-  return tryApi(async () => {
-    const client = getClient();
-    const response = await client.get<WCProduct>(`/products/${id}`);
-    const p = response.data;
-    return {
-      id: String(p.id),
-      cat: p.categories[0]?.slug || 'seeds',
-      name: p.name,
-      price: Math.round(parseFloat(p.price) || 0),
-      was: p.regular_price !== p.sale_price ? Math.round(parseFloat(p.regular_price) || 0) : undefined,
-      img: p.images[0]?.src || null,
-      imgLabel: p.images[0]?.alt || p.name,
-      rating: parseFloat(p.average_rating) || 4.5,
-      reviews: p.rating_count || 0,
-      stock: p.stock_status === 'instock' ? 'in' : p.stock_status === 'outofstock' ? 'out' : 'low',
-      sku: p.slug,
-      desc: p.short_description || p.description,
-      specs: p.attributes.map(a => [a.name, a.options.join(', ')] as [string, string]),
-      related: [],
-    } as Product;
-  }, local);
-}
-
-export async function getCategories(): Promise<Category[]> {
-  return tryApi(async () => {
-    const client = getClient();
-    const response = await client.get<{ id: number; name: string; slug: string }[]>('/products/categories', {
-      params: { per_page: 100, hide_empty: true },
-    });
-    return response.data.map(c => ({ id: c.slug, label: c.name, icon: c.slug }));
-  }, FS_CATEGORIES);
-}
+// Catalog (products/categories) is read directly by the RTK Query fetchBaseQuery
+// in src/store/api/wooApi.ts — see mapProduct above for WC → app mapping.
 
 export async function createOrder(order: WCOrder): Promise<{ id: string; status: string }> {
   return tryApi(async () => {
