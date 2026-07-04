@@ -174,16 +174,16 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
             <View className="flex-row items-center justify-between px-4 mb-3">
               <Text className="font-m-bold text-[15px] text-ink">Shop by Category</Text>
             </View>
-            <View className="flex-row flex-wrap px-4 gap-[10px] mb-6">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4 gap-[14px] pb-1 mb-6">
               {categories.map(cat => (
-                <Pressable key={cat.id} className="w-[30%] items-center bg-card rounded-md py-[14px] border border-line" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
-                  <View className="mb-[6px]">
-                    <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={26} color={colors.green} strokeWidth={1.9} />
+                <Pressable key={cat.id} className="w-[76px] items-center" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
+                  <View className="w-[54px] h-[54px] rounded-full bg-limeTint items-center justify-center mb-[6px]">
+                    <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={24} color={colors.green} strokeWidth={1.9} />
                   </View>
-                  <Text className="font-p-medium text-[11px] text-ink text-center">{cat.label}</Text>
+                  <Text className="font-p-medium text-[11px] text-ink text-center" numberOfLines={1}>{cat.label}</Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
           </>
         )}
 
