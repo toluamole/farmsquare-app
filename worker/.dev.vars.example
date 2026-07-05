@@ -1,0 +1,4 @@
+# Local secrets for `wrangler dev` — copy to .dev.vars (gitignored).
+# In production these are set with `bunx wrangler secret put <NAME>`.
+WC_KEY=ck_xxx
+WC_SECRET=cs_xxx

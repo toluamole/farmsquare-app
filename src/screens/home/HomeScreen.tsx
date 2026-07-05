@@ -3,9 +3,8 @@ import { View, Text, ScrollView, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { FS_CATEGORIES } from '../../data/products';
 import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
-import { FS_DEALS } from '../../data/deals';
+import { Deal } from '../../data/deals';
 // import FsCarousel from '../../components/common/FsCarousel';
 // import AdSlide from '../../components/common/AdSlide';
 import FsBadge from '../../components/common/FsBadge';
@@ -27,7 +26,7 @@ const CATEGORY_ICONS: Record<string, IconName> = {
   livestock: 'Bird',
 };
 
-function DealCard({ deal, onPress, t0 }: { deal: typeof FS_DEALS[0]; onPress: () => void; t0: number }) {
+function DealCard({ deal, onPress, t0 }: { deal: Deal; onPress: () => void; t0: number }) {
   const target = deal.closeOffset ? t0 + deal.closeOffset : 0;
   const { d, h, m, s, done } = useCountdown(target);
   const pct = Math.round((deal.reserved / deal.total) * 100);
@@ -66,9 +65,8 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
   const { auth, cartCount, cropSetup, t0 } = app;
 
   const { data: products = [] } = useGetProductsQuery();
-  // Live WooCommerce categories; falls back to FS_CATEGORIES via the service layer.
-  const { data: categories = FS_CATEGORIES } = useGetCategoriesQuery();
-  const activeDeals = FS_DEALS.filter(d => d.status === 'active');
+  // Live WooCommerce categories (live-only; empty when WC is unavailable).
+  const { data: categories = [] } = useGetCategoriesQuery();
   const flashProducts = products.filter(p => p.was);
 
 //   const heroSlides = [
@@ -105,9 +103,6 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
             </Pressable>
             <Pressable className="w-10 h-10 items-center justify-center relative" onPress={() => navigation.navigate('Notifications')}>
               <Icon name="Bell" size={22} color={colors.ink} />
-              <View className="absolute top-[2px] right-[2px] bg-red rounded-full min-w-[16px] h-4 items-center justify-center px-[3px]">
-                <Text className="font-p-bold text-[9px] text-white leading-[12px]">2</Text>
-              </View>
             </Pressable>
           </View>
         </View>
@@ -174,19 +169,23 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
         </View> */}
 
         {/* Shop by Category */}
-        <View className="flex-row items-center justify-between px-4 mb-3">
-          <Text className="font-m-bold text-[15px] text-ink">Shop by Category</Text>
-        </View>
-        <View className="flex-row flex-wrap px-4 gap-[10px] mb-6">
-          {categories.map(cat => (
-            <Pressable key={cat.id} className="w-[30%] items-center bg-card rounded-md py-[14px] border border-line" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
-              <View className="mb-[6px]">
-                <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={26} color={colors.green} strokeWidth={1.9} />
-              </View>
-              <Text className="font-p-medium text-[11px] text-ink text-center">{cat.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {categories.length > 0 && (
+          <>
+            <View className="flex-row items-center justify-between px-4 mb-3">
+              <Text className="font-m-bold text-[15px] text-ink">Shop by Category</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4 gap-[14px] pb-1 mb-6">
+              {categories.map(cat => (
+                <Pressable key={cat.id} className="w-[76px] items-center" onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
+                  <View className="w-[54px] h-[54px] rounded-full bg-limeTint items-center justify-center mb-[6px]">
+                    <Icon name={CATEGORY_ICONS[cat.id] || 'Package'} size={24} color={colors.green} strokeWidth={1.9} />
+                  </View>
+                  <Text className="font-p-medium text-[11px] text-ink text-center" numberOfLines={1}>{cat.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        )}
 
         {/* Flash Deals */}
         <View className="flex-row items-center justify-between px-4 mb-3">

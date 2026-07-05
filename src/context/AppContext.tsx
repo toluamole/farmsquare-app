@@ -3,8 +3,8 @@
  * Keeps the exact AppContextValue shape so existing screens work unchanged.
  * New code can use the typed Redux hooks (src/store/hooks) directly instead.
  */
-import { fsProduct, FS_PRODUCTS, Product } from '../data/products';
-import { FS_DEALS, Deal } from '../data/deals';
+import { fsProduct, Product } from '../data/products';
+import { Deal } from '../data/deals';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { signIn as signInAction, signOut as signOutAction, browseAsGuest as browseAsGuestAction } from '../store/slices/authSlice';
 import { signOut as firebaseSignOut } from '../services/firebase';
@@ -44,9 +44,9 @@ export function useApp() {
     setTimeout(() => dispatch(clearToastAction()), 3000);
   };
 
-  // Accepts either a product id (resolved from local data) or a full Product
-  // object — the latter is required for live WooCommerce items whose numeric
-  // ids don't exist in the local FS_PRODUCTS table.
+  // Accepts a full Product object (the live path). A bare id is also accepted
+  // for backward compatibility but no longer resolves locally (fsProduct is a
+  // stub now), so callers should pass the Product object.
   const addToCart = (productOrId: Product | string, qty = 1, _buyNow?: boolean, silent?: boolean) => {
     const product = typeof productOrId === 'string' ? fsProduct(productOrId) : productOrId;
     if (!product) return;
@@ -55,13 +55,11 @@ export function useApp() {
     if (!silent) toast(`${product.name.split(' — ')[0]} added to cart`);
   };
 
-  const addDealToCart = (dealId: string, qty: number) => {
-    const deal = FS_DEALS.find(d => d.id === dealId);
-    if (!deal) return;
-    const product = FS_PRODUCTS.find(p => p.id === deal.product);
-    if (!product) return;
+  // Group Buy: caller passes the resolved deal + its product (live-ready, no
+  // local lookups). Price is overridden with the wholesale deal price.
+  const addDealToCart = (deal: Deal, product: Product, qty: number) => {
     const item: CartItem = {
-      key: `deal-${dealId}-${Date.now()}`,
+      key: `deal-${deal.id}-${Date.now()}`,
       productId: product.id,
       p: { ...product, price: deal.price },
       qty,
@@ -122,8 +120,8 @@ export function useApp() {
     reservations,
     reserve,
 
-    // Deals
-    deals: FS_DEALS as Deal[],
+    // Deals — no Group Buy backend yet; empty until wired (see services/groupbuy).
+    deals: [] as Deal[],
     t0,
 
     // Addresses

@@ -1,0 +1,22 @@
+{
+  "name": "farmsquare-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-05",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "vars": {
+    "WC_URL": "https://farmsquare.ng"
+  },
+  // Secrets (set with `bunx wrangler secret put <NAME>`; locally via .dev.vars):
+  //   WC_KEY    — WooCommerce consumer key
+  //   WC_SECRET — WooCommerce consumer secret
+
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  }
+
+  // Enable once api.farmsquare.ng DNS + zone route are configured in the dashboard:
+  // "routes": [{ "pattern": "api.farmsquare.ng/*", "zone_name": "farmsquare.ng" }]
+}

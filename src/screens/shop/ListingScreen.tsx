@@ -4,7 +4,7 @@ import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { FS_CATEGORIES, Product } from '../../data/products';
+import { Product } from '../../data/products';
 import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
 import ScreenHeader from '../../components/layout/ScreenHeader';
 import BottomSheet from '../../components/layout/BottomSheet';
@@ -26,8 +26,8 @@ export default function ListingScreen({ navigation, route }: { navigation: any; 
   const { cartCount } = app;
   const flash = !!route.params?.flash;
 
-  const { data: products = [], isLoading } = useGetProductsQuery();
-  const { data: categories = FS_CATEGORIES } = useGetCategoriesQuery();
+  const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
+  const { data: categories = [] } = useGetCategoriesQuery();
   const cat = categories.find(c => c.id === route.params?.cat);
 
   const [sort, setSort] = useState('Popularity');
@@ -103,7 +103,16 @@ export default function ListingScreen({ navigation, route }: { navigation: any; 
             <Text className="font-p-regular text-[12px] text-sub mt-2">Loading products…</Text>
           </View>
         )}
-        {!isLoading && list.length === 0 && (
+        {isError && products.length === 0 && (
+          <FsEmpty
+            icon="box"
+            title="Couldn't load products"
+            sub="We couldn't reach the store. Check your connection and try again."
+            action="Retry"
+            onAction={() => refetch()}
+          />
+        )}
+        {!isLoading && !isError && list.length === 0 && (
           <FsEmpty
             icon="search"
             title="Nothing matches"

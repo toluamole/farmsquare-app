@@ -5,6 +5,7 @@ import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors, shadows } from '../../theme';
 import { useApp } from '../../context/AppContext';
+import { useGetProductQuery } from '../../store/api/wooApi';
 import FsBadge from '../../components/common/FsBadge';
 import FsButton from '../../components/common/FsButton';
 import FsProgress from '../../components/common/FsProgress';
@@ -46,6 +47,7 @@ export default function DealDetailScreen({ navigation, route }: { navigation: an
   const { deals, t0, addDealToCart, toast } = app;
 
   const deal = deals.find(d => d.id === route.params?.id);
+  const { data: dealProduct } = useGetProductQuery(deal?.product ?? '', { skip: !deal });
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [qty, setQty] = useState(deal ? deal.min : 1);
@@ -283,8 +285,8 @@ export default function DealDetailScreen({ navigation, route }: { navigation: an
         <Text className="font-p-semibold text-[11px] text-green mt-1">You save {naira(qty * (deal.retail - deal.price))} vs retail</Text>
         <Text className="font-p-regular text-[10px] text-faint mt-1 mb-[14px]">+ delivery & pickup options chosen at checkout · confirmed after the deal fills</Text>
 
-        <FsButton full size="lg" label="Proceed to Checkout" onPress={() => { setSheetOpen(false); addDealToCart(deal.id, qty); navigation.navigate('Cart'); }} />
-        <FsButton full kind="secondary" label="Add to Cart" style={{ marginTop: 9 }} onPress={() => { addDealToCart(deal.id, qty); setSheetOpen(false); }} />
+        <FsButton full size="lg" label="Proceed to Checkout" onPress={() => { setSheetOpen(false); if (dealProduct) { addDealToCart(deal, dealProduct, qty); navigation.navigate('Cart'); } }} />
+        <FsButton full kind="secondary" label="Add to Cart" style={{ marginTop: 9 }} onPress={() => { if (dealProduct) addDealToCart(deal, dealProduct, qty); setSheetOpen(false); }} />
         <Pressable className="self-center mt-3 py-1 px-3" onPress={() => setSheetOpen(false)}>
           <Text className="font-p-medium text-[12px] text-sub">Cancel</Text>
         </Pressable>

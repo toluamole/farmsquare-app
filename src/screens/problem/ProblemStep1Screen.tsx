@@ -9,7 +9,7 @@ import { FS_CROPS } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsChip from '../../components/common/FsChip';
 import ScreenHeader from '../../components/layout/ScreenHeader';
-import { FS_PROBLEM_CATS } from './diagnoses';
+import { PROBLEM_CATEGORIES } from '../../services/diagnosis';
 
 const BASE_CROPS = ['tomato', 'maize', 'pepper', 'cassava', 'rice'];
 
@@ -40,7 +40,7 @@ export default function ProblemStep1Screen({ navigation }: { navigation: any; ro
 
         <Text className="font-p-semibold text-[12.5px] text-ink mb-[10px] mt-[22px]">What kind of problem?</Text>
         <View className="flex-row flex-wrap justify-between">
-          {FS_PROBLEM_CATS.map(cat => {
+          {PROBLEM_CATEGORIES.map(cat => {
             const active = category === cat.id;
             return (
               <Pressable key={cat.id} className={cn('w-[48.5%] flex-row items-center gap-[10px] bg-card border-[1.5px] rounded-md px-3 py-[13px] mb-[9px]', active ? 'bg-limeTint border-green' : 'border-line')} onPress={() => setCategory(cat.id)}>
