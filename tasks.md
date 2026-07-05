@@ -28,11 +28,10 @@ Legend: `[x]` done · `[ ]` open · **(P0/P1/P2)** launch priority ·
 ### Open
 - [ ] **(P0) Checkout takes no payment** (§5.2.4, F-6). `CheckoutStep2Screen`
       `finalize()` creates the order for *all* methods with no charge.
-  - [ ] Restore Paystack (dev-build webview crash — see memory/infra) and
-        decide on Flutterwave as second option (PRD lists both).
-  - [ ] Wire `markOrderPaid` (`wooApi`) after a successful charge.
-  - [ ] Verify transaction server-side, not client-side (§ note in
-        `woocommerce.ts` `markOrderPaid`; PRD F-6 dev note: webhook callbacks).
+      **Deferred (2026-07-04):** all Paystack tasks removed from the backlog
+      for now per decision. Provider integration (charge flow, `markOrderPaid`
+      wiring, server-side verification) resumes once a payment provider is
+      re-selected.
 - [ ] **(P0) Order creation is mock** (§5.1 `/orders`). Read-only WC keys →
       `createOrder` 401 → random local `FS-#####` id. Provision write keys;
       confirm real orders land in WooCommerce.
@@ -74,7 +73,8 @@ the typed stub `src/services/groupbuy.ts` (`getDeals()` → `[]`,
       `group_buy_shares`). Wire `getDeals`/`reserveDeal`.
 - [ ] **(P0) Escrow payment flow** (§5.3.6): pay-on-reserve, funds held until
       minimum fill threshold; auto-refund if deal fails (§5.3.8). Coordinate
-      with Paystack/Flutterwave on delayed settlement.
+      with the chosen payment provider on delayed settlement (provider
+      selection currently deferred).
 - [ ] **(P1) Real-time progress** (§5.3.10): WebSocket/long-poll progress bar;
       server-side UTC deadlines with client-rendered countdowns (currently
       local `t0` offsets).
@@ -177,8 +177,6 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
 - [ ] **(P1) Deep linking** — required for the Group Buy viral loop (§5.3.7)
       and notification tap-through (J-1); not configured.
 - [ ] **(P2) Sentry crash reporting** (§9).
-- [ ] **(Restore)** Paystack unwired from App root + checkout — dep still
-      installed; see memory for restore steps.
 
 ---
 
@@ -212,8 +210,9 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
 2. **Advisory content strategy** (§6.1) — PRD Phase 1 is content-first
    (static agronomist guides); app is currently backend-first (empty stubs
    awaiting an Advisory API).
-3. **Flutterwave** (§5.2.4, §9) — PRD treats it as a co-equal payment/escrow
-   option; only Paystack was ever integrated (and is currently unwired).
+3. **Payment provider** (§5.2.4, §9) — PRD lists Paystack and Flutterwave as
+   co-equal options. Paystack was previously integrated but is unwired, and
+   all provider work is deferred as of 2026-07-04 pending re-selection.
 
 ---
 
