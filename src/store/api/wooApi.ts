@@ -1,31 +1,18 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { Product, Category } from '../../data/products';
 import {
-  WC_URL, WC_KEY, WC_SECRET, mapProduct, WCProduct,
+  API_URL, mapProduct, WCProduct,
   createOrder, getOrder, markOrderPaid, WCOrder,
 } from '../../services/woocommerce';
 
 /**
- * RTK Query layer over the WooCommerce REST API. The catalog is live-only — no
- * mock fallback — so these endpoints surface real empty/error states (isError)
- * when WooCommerce is unavailable. Auth (consumer key/secret) is injected as
- * query params by the baseQuery wrapper; error handling is centralized there.
+ * RTK Query layer over the WooCommerce REST API, reached via the
+ * farmsquare-api Worker (see worker/) which holds the credentials server-side
+ * — nothing is injected client-side. The catalog is live-only — no mock
+ * fallback — so these endpoints surface real empty/error states (isError)
+ * when the API is unavailable.
  */
-const rawBaseQuery = fetchBaseQuery({ baseUrl: `${WC_URL}/wp-json/wc/v3` });
-
-const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = (
-  args,
-  api,
-  extraOptions,
-) => {
-  const fa: FetchArgs = typeof args === 'string' ? { url: args } : args;
-  return rawBaseQuery(
-    { ...fa, params: { ...fa.params, consumer_key: WC_KEY, consumer_secret: WC_SECRET } },
-    api,
-    extraOptions,
-  );
-};
+const baseQuery = fetchBaseQuery({ baseUrl: `${API_URL}/wc` });
 
 type WCCategory = { id: number; name: string; slug: string };
 

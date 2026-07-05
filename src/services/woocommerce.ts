@@ -1,20 +1,17 @@
 import axios, { AxiosInstance } from 'axios';
 import { Product } from '../data/products';
 
-export const WC_URL = process.env.EXPO_PUBLIC_WC_URL || 'https://farmsquare.ng';
-export const WC_KEY = process.env.EXPO_PUBLIC_WC_KEY || '';
-export const WC_SECRET = process.env.EXPO_PUBLIC_WC_SECRET || '';
+// All WooCommerce traffic goes through the farmsquare-api Cloudflare Worker,
+// which holds the consumer key/secret as server-side secrets (see worker/).
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL || 'https://farmsquare-api.farmsquare.workers.dev';
 
 let _client: AxiosInstance | null = null;
 
 function getClient(): AxiosInstance {
   if (!_client) {
     _client = axios.create({
-      baseURL: `${WC_URL}/wp-json/wc/v3`,
-      auth: WC_KEY && WC_SECRET ? {
-        username: WC_KEY,
-        password: WC_SECRET,
-      } : undefined,
+      baseURL: `${API_URL}/wc`,
       timeout: 10000,
     });
   }
@@ -66,7 +63,6 @@ export interface WCOrder {
 }
 
 async function tryApi<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
-  if (!WC_KEY || !WC_SECRET) return fallback;
   try {
     return await fn();
   } catch (error) {
