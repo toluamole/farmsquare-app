@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { IconName } from '../../components/common/Icon';
@@ -6,16 +6,19 @@ import { cn } from '../../lib/utils';
 import { colors } from '../../theme';
 import FsButton from '../../components/common/FsButton';
 import ScreenHeader from '../../components/layout/ScreenHeader';
-import { getCommonProblems, CommonProblem } from '../../services/diagnosis';
+
+// Common-problems / FAQ library (H-5) requires the advisory backend — empty
+// until wired (tasks.md §6.2); the section below stays hidden meanwhile.
+interface CommonProblem {
+  icon: string;
+  title: string;
+  sub: string;
+  crops: string;
+}
+const COMMON_PROBLEMS: CommonProblem[] = [];
 
 export default function ProblemHomeScreen({ navigation }: { navigation: any; route: any }) {
-  const [common, setCommon] = useState<CommonProblem[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    getCommonProblems().then(p => { if (active) setCommon(p); });
-    return () => { active = false; };
-  }, []);
+  const common = COMMON_PROBLEMS;
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StatusBar, Image, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { getCropStage, cropLabel, StageWithStatus } from '../../services/advisory';
+import { cropLabel, StageWithStatus } from '../../data/crops';
 import { fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
@@ -21,34 +21,14 @@ export default function ActivityScreen({ navigation, route }: { navigation: any;
   const { toast, addToCart } = useApp();
 
   const label = cropLabel(cropId);
-  const [stage, setStage] = useState<StageWithStatus | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    getCropStage(cropId, stageId, plantingDate)
-      .then(s => { if (active) setStage(s); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [cropId, stageId, plantingDate]);
+  // No advisory backend yet (tasks.md §6.1) — no stage data, so the empty
+  // state below renders. Typed so the guide UI lights up once wired.
+  const stage = undefined as StageWithStatus | undefined;
 
   const markDone = () => {
     toast('Great work! Stage marked as done');
     navigation.goBack();
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
-        <ScreenHeader title="Stage Guide" subtitle={label} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.green} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (!stage) {
     return (

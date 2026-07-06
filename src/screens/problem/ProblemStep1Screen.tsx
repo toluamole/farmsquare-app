@@ -9,7 +9,7 @@ import { FS_CROPS } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsChip from '../../components/common/FsChip';
 import ScreenHeader from '../../components/layout/ScreenHeader';
-import { PROBLEM_CATEGORIES } from '../../services/diagnosis';
+import { PROBLEM_CATEGORIES } from '../../data/problems';
 
 const BASE_CROPS = ['tomato', 'maize', 'pepper', 'cassava', 'rice'];
 

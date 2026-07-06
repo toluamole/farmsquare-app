@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 import { cn } from '../../lib/utils';
-import { getNotifications, AppNotification } from '../../services/notifications';
 import FsChip from '../../components/common/FsChip';
 import FsEmpty from '../../components/common/FsEmpty';
 import Icon, { IconName } from '../../components/common/Icon';
@@ -24,19 +23,23 @@ const TONE_COLOR: Record<string, string> = {
 
 const FILTER_OPTS = ['All', 'Deals', 'Farm', 'Orders'];
 
+// Shape of the notifications inbox (J-1). No backend yet — the inbox fills
+// once FCM + server-side persistence land (tasks.md §9).
+interface AppNotification {
+  id: string;
+  icon: string;
+  tone: string;
+  title: string;
+  body: string;
+  time: string;
+  unread: boolean;
+  group: string;
+}
+
 export default function NotificationsScreen({ navigation }: { navigation: any }) {
   const [filter, setFilter] = useState('All');
   const [read, setRead] = useState<Set<number>>(new Set());
-  const [notifs, setNotifs] = useState<AppNotification[]>([]);
-  const [isLoading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    getNotifications()
-      .then(n => { if (active) setNotifs(n); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+  const notifs: AppNotification[] = [];
 
   const markAllRead = () => setRead(new Set(notifs.map((_, i) => i)));
 
@@ -75,11 +78,7 @@ export default function NotificationsScreen({ navigation }: { navigation: any })
         ))}
       </ScrollView>
 
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.green} />
-        </View>
-      ) : notifs.length === 0 ? (
+      {notifs.length === 0 ? (
         <FsEmpty
           icon="box"
           title="No notifications yet"

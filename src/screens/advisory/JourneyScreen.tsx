@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StatusBar, Image, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Pressable, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors, shadows } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { getCropJourney, cropLabel, JourneyResult } from '../../services/advisory';
+import { cropLabel, StageWithStatus } from '../../data/crops';
 import { fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
@@ -15,6 +15,7 @@ import ScreenHeader from '../../components/layout/ScreenHeader';
 import BottomSheet from '../../components/layout/BottomSheet';
 import { STAGE_IMAGES } from './stageImages';
 
+const DAY_MS = 86400000;
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
 const fmtDate = (d: Date) => d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
 const fmtDateFull = (d: Date) => d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -26,23 +27,14 @@ export default function JourneyScreen({ navigation, route }: { navigation: any; 
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [dateSheet, setDateSheet] = useState(false);
-  const [journey, setJourney] = useState<JourneyResult>(() => ({
-    stages: [],
-    todayOffset: 0,
-    day0: new Date(plantingDate + 'T12:00:00'),
-  }));
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    getCropJourney(cropId, plantingDate)
-      .then(r => { if (active) setJourney(r); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [cropId, plantingDate]);
-
-  const { stages, todayOffset, day0 } = journey;
+  // No advisory backend yet — the stage guides arrive with the 5-crop
+  // agronomist content (tasks.md §6.1); until then the empty state renders.
+  const stages: StageWithStatus[] = [];
+  const day0 = new Date(plantingDate + 'T12:00:00');
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const todayOffset = Math.floor((today.getTime() - day0.getTime()) / DAY_MS);
   const label = cropLabel(cropId);
   const isPoultry = cropId === 'poultry' || cropId === 'broiler';
   const dateWord = isPoultry ? 'Stocked' : 'Planted';
@@ -59,18 +51,6 @@ export default function JourneyScreen({ navigation, route }: { navigation: any; 
   };
 
   const quickPicks: [string, number][] = [['Today', 0], ['1 week ago', -7], ['1 month ago', -30]];
-
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
-        <ScreenHeader title={`${label} Journey`} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={colors.green} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (stages.length === 0) {
     return (

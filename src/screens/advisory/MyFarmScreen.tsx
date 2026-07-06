@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, shadows } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { cropLabel } from '../../services/advisory';
+import { cropLabel } from '../../data/crops';
 import FsEmpty from '../../components/common/FsEmpty';
 import FsButton from '../../components/common/FsButton';
 import Icon from '../../components/common/Icon';

@@ -23,5 +23,6 @@ export interface Deal {
   details: string;
 }
 
-// Deals are served live via src/services/groupbuy.ts (no local mock data).
+// Deals will be served by the Group Buy API on the farmsquare-api Worker
+// (no local mock data; AppContext.deals is empty until then).
 // `t0` (set when the app starts) is used with a deal's offsets for countdowns.

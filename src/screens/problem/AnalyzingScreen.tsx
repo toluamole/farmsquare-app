@@ -2,17 +2,15 @@ import React, { useEffect } from 'react';
 import { View, Text, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
-import { diagnose } from '../../services/diagnosis';
 
 export default function AnalyzingScreen({ navigation, route }: { navigation: any; route: any }) {
-  const { crop, category, description } = route.params as { crop: string; category: string; description: string };
+  const { crop, category } = route.params as { crop: string; category: string; description: string };
 
   useEffect(() => {
-    let active = true;
-    diagnose({ crop, category, description }).then(results => {
-      if (active) navigation.replace('Results', { crop, category, results });
-    });
-    return () => { active = false; };
+    // No diagnosis backend yet (tasks.md §6.2) — hand off to Results, which
+    // shows its no-matches state.
+    const t = setTimeout(() => navigation.replace('Results', { crop, category, results: [] }), 900);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
