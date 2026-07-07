@@ -1,18 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, FlatList } from 'react-native';
 import Icon from '../../components/common/Icon';
 import { cn } from '../../lib/utils';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
-import { Product } from '../../data/products';
-import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
+import { useBrowseProductsInfiniteQuery, useGetCategoriesQuery, ProductFilters, SortKey } from '../../store/api/wooApi';
 import ScreenHeader from '../../components/layout/ScreenHeader';
 import BottomSheet from '../../components/layout/BottomSheet';
 import FsGridCard from '../../components/common/FsGridCard';
 import FsChip from '../../components/common/FsChip';
 import FsEmpty from '../../components/common/FsEmpty';
 
-const SORTS = ['Popularity', 'Newest', 'Price: Low–High', 'Price: High–Low', 'Rating'];
+const SORTS: SortKey[] = ['Popularity', 'Newest', 'Price: Low–High', 'Price: High–Low', 'Rating'];
 
 const PRICE_FILTERS: { value: number | null; label: string }[] = [
   { value: null, label: 'Any price' },
@@ -25,40 +24,46 @@ export default function ListingScreen({ navigation, route }: { navigation: any; 
   const app = useApp();
   const { cartCount } = app;
   const flash = !!route.params?.flash;
+  const type = route.params?.type as 'new' | 'bestsellers' | undefined;
 
-  const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
   const { data: categories = [] } = useGetCategoriesQuery();
   const cat = categories.find(c => c.id === route.params?.cat);
 
-  const [sort, setSort] = useState('Popularity');
+  const [sort, setSort] = useState<SortKey>(type === 'new' ? 'Newest' : 'Popularity');
   const [sortOpen, setSortOpen] = useState(false);
   const [inStock, setInStock] = useState(false);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
-  const list = useMemo(() => {
-    let l = products.filter(p => (!cat || p.cat === cat.id) && (!flash || p.was));
-    if (inStock) l = l.filter(p => p.stock === 'in');
-    if (maxPrice) l = l.filter(p => p.price <= maxPrice);
-    return [...l].sort((a, b) =>
-      sort === 'Price: Low–High' ? a.price - b.price
-        : sort === 'Price: High–Low' ? b.price - a.price
-        : sort === 'Rating' ? b.rating - a.rating
-        : b.reviews - a.reviews,
-    );
-  }, [products, cat, flash, inStock, maxPrice, sort]);
+  // All filtering/sorting is server-side (WC query params via the Worker).
+  const filters = useMemo<ProductFilters>(() => ({
+    category: cat?.wcId,
+    onSale: flash || undefined,
+    inStock: inStock || undefined,
+    maxPrice: maxPrice ?? undefined,
+    sort,
+  }), [cat?.wcId, flash, inStock, maxPrice, sort]);
 
-  const rows: (Product | null)[][] = [];
-  for (let i = 0; i < list.length; i += 2) {
-    rows.push([list[i], list[i + 1] || null]);
-  }
+  const {
+    data, isLoading, isError, refetch,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useBrowseProductsInfiniteQuery(filters, {
+    // A category listing must wait for the slug → WC id lookup, or the first
+    // fetch would return the whole unfiltered catalog.
+    skip: !!route.params?.cat && !cat,
+  });
 
-  const title = flash ? 'Flash Deals' : cat ? cat.label : 'All Products';
+  const list = data?.pages.flatMap(p => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+  // Pad to an even length so a lone item in the last row keeps card width.
+  const gridData = list.length % 2 === 1 ? [...list, null] : list;
+
+  const title = flash ? 'Flash Deals' : type === 'new' ? 'New Arrivals' : type === 'bestsellers' ? 'Best Sellers' : cat ? cat.label : 'All Products';
 
   return (
     <View className="flex-1 bg-bg">
       <ScreenHeader
         title={title}
-        subtitle={`${list.length} products`}
+        subtitle={`${total.toLocaleString('en-NG')} products`}
         right={
           <Pressable onPress={() => navigation.navigate('Cart')} className="w-9 h-9 items-center justify-center relative">
             <Icon name="ShoppingCart" size={22} color={colors.ink} />
@@ -85,44 +90,55 @@ export default function ListingScreen({ navigation, route }: { navigation: any; 
         </ScrollView>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="px-4 gap-[9px]" showsVerticalScrollIndicator={false}>
-        {rows.map((row, i) => (
-          <View key={i} className="flex-row gap-[9px]">
-            {row.map((p, j) =>
-              p ? (
-                <FsGridCard key={p.id} p={p} onOpen={() => navigation.navigate('Product', { id: p.id })} onAdd={() => app.addToCart(p)} />
-              ) : (
-                <View key={`spacer-${j}`} className="flex-1" />
-              ),
-            )}
-          </View>
-        ))}
-        {isLoading && list.length === 0 && (
-          <View className="py-12 items-center">
-            <ActivityIndicator color={colors.green} />
-            <Text className="font-p-regular text-[12px] text-sub mt-2">Loading products…</Text>
-          </View>
-        )}
-        {isError && products.length === 0 && (
-          <FsEmpty
-            icon="box"
-            title="Couldn't load products"
-            sub="We couldn't reach the store. Check your connection and try again."
-            action="Retry"
-            onAction={() => refetch()}
-          />
-        )}
-        {!isLoading && !isError && list.length === 0 && (
-          <FsEmpty
-            icon="search"
-            title="Nothing matches"
-            sub="Try removing some filters."
-            action="Reset filters"
-            onAction={() => { setInStock(false); setMaxPrice(null); }}
-          />
-        )}
-        <View style={{ height: 24 }} />
-      </ScrollView>
+      <FlatList
+        data={gridData}
+        keyExtractor={(p, i) => (p ? p.id : `spacer-${i}`)}
+        numColumns={2}
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 9, paddingBottom: 24 }}
+        columnWrapperStyle={{ gap: 9 }}
+        showsVerticalScrollIndicator={false}
+        onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
+        onEndReachedThreshold={0.5}
+        renderItem={({ item: p }) =>
+          p ? (
+            <FsGridCard p={p} onOpen={() => navigation.navigate('Product', { id: p.id })} onAdd={() => app.addToCart(p)} />
+          ) : (
+            <View className="flex-1" />
+          )
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="py-12 items-center">
+              <ActivityIndicator color={colors.green} />
+              <Text className="font-p-regular text-[12px] text-sub mt-2">Loading products…</Text>
+            </View>
+          ) : isError ? (
+            <FsEmpty
+              icon="box"
+              title="Couldn't load products"
+              sub="We couldn't reach the store. Check your connection and try again."
+              action="Retry"
+              onAction={() => refetch()}
+            />
+          ) : (
+            <FsEmpty
+              icon="search"
+              title="Nothing matches"
+              sub="Try removing some filters."
+              action="Reset filters"
+              onAction={() => { setInStock(false); setMaxPrice(null); }}
+            />
+          )
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator color={colors.green} />
+            </View>
+          ) : null
+        }
+      />
 
       <BottomSheet open={sortOpen} onClose={() => setSortOpen(false)} title="Sort by">
         {SORTS.map(s => (

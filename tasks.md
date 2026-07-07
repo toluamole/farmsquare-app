@@ -43,14 +43,23 @@ Legend: `[x]` done · `[ ]` open · **(P0/P1/P2)** launch priority ·
       always empty; Group Buy cross-sell callout has no data source
       (`p.deal`). Wire related products from WC `related_ids` and the callout
       from the Group Buy API once it exists.
-- [ ] **(P1) Listing gaps** (§5.2.2, F-2): no server-side pagination /
-      infinite scroll (single `per_page: 50` fetch, client-side filtering);
-      no brand filter; no grid/list toggle. PRD wants WC API paging +
-      skeleton loaders.
-- [ ] **(P1) Search** (F-7): client-side over the loaded list — PRD wants
-      debounced server search + autocomplete. `TRENDING` / `RECENT_SEARCHES`
-      in `SearchScreen.tsx:12-13` are still hardcoded mock (survived the mock
-      purge): recent should come from AsyncStorage, trending from backend.
+- [x] **(P1) Listing pagination + server filters** (§5.2.2, F-2) — resolved
+      2026-07-07. `browseProducts` infinite query (RTK `builder.infiniteQuery`,
+      20/page, totals from the `X-WP-Total*` headers the Worker forwards);
+      Listing is a `FlatList` with infinite scroll and all filter/sort as WC
+      query params (`category` by numeric id, `on_sale`, `stock_status`,
+      `max_price`, `orderby`). Home/Shop rails are dedicated server queries
+      (`on_sale` / popularity / date) instead of slices of one page.
+- [ ] **(P1) Listing gaps — remainder** (§5.2.2, F-2): brand filter and
+      grid/list toggle (needs a WC brand-taxonomy decision); skeleton loaders
+      (spinners today).
+- [x] **(P1) Search** (F-7) — server search resolved 2026-07-07: debounced
+      (400ms) WC `search` param over the full catalog with paginated results;
+      recent searches persisted in `searchSlice` (redux-persist) with a
+      working Clear. Remainder below.
+- [ ] **(P2) Search remainder** (F-7): autocomplete suggestions and
+      backend-driven trending terms (`TRENDING` in `SearchScreen.tsx` is
+      curated static until search analytics exist).
 - [ ] **(Decision) Local Redux cart vs CoCart** (§5.1). PRD calls CoCart
       "critical" for web↔app cart sync; app deliberately uses a local
       persisted cart. Sign off the deviation or adopt CoCart.

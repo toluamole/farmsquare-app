@@ -21,14 +21,14 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
   const app = useApp();
   const { cartCount } = app;
 
-  const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
   const { data: categories = [] } = useGetCategoriesQuery();
 
-  // Derive the homepage rails from the live catalog (falls back to mock data
-  // via the service layer when WC credentials are absent).
-  const flashDeals = products.filter(p => p.was);
-  const bestSellers = [...products].sort((a, b) => b.reviews - a.reviews).slice(0, 8);
-  const newArrivals = products.slice(0, 8);
+  // Each rail is its own server-side query (the catalog is 1,300+ products,
+  // so deriving rails from one page would miss most of it). RTK Query dedupes
+  // these with HomeScreen's identical calls.
+  const { data: newArrivals = [], isLoading, isError, refetch } = useGetProductsQuery({ orderby: 'date', per_page: 8 });
+  const { data: bestSellers = [] } = useGetProductsQuery({ orderby: 'popularity', per_page: 8 });
+  const { data: flashDeals = [] } = useGetProductsQuery({ on_sale: true, per_page: 10 });
 
   // const brandSlides = [
   //   <AdSlide key="b1" eyebrow="BRAND DEAL" title="Notore Fertilizer — Direct from Factory" sub="Certified NPK, Urea & CAN at best prices" cta="Shop Notore" icon="Factory" tint="rgba(52,78,20,0.94)" onPress={() => navigation.navigate('Listing', { brand: 'notore' })} />,
@@ -85,7 +85,7 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
         )}
 
         {/* Loading state for the live catalog */}
-        {isLoading && products.length === 0 && (
+        {isLoading && newArrivals.length === 0 && (
           <View className="py-10 items-center">
             <ActivityIndicator color={colors.green} />
             <Text className="font-p-regular text-[12px] text-sub mt-2">Loading products…</Text>
@@ -93,7 +93,7 @@ export default function ShopScreen({ navigation }: { navigation: any }) {
         )}
 
         {/* Error state for the live catalog */}
-        {isError && products.length === 0 && (
+        {isError && newArrivals.length === 0 && (
           <FsEmpty
             icon="box"
             title="Couldn't load products"
