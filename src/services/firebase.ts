@@ -31,9 +31,6 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '',
 };
 
-/** True only when real Firebase credentials are present. */
-export const isFirebaseConfigured = !!firebaseConfig.apiKey;
-
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 
@@ -78,10 +75,6 @@ function mapUser(u: User): AuthUser {
   return { uid: u.uid, email: u.email, displayName: u.displayName };
 }
 
-function mockUser(email?: string, name?: string): AuthUser {
-  return { uid: 'mock-uid-' + Date.now(), email: email || null, displayName: name || null };
-}
-
 function friendlyError(e: unknown): string {
   const code = (e as { code?: string }).code || '';
   switch (code) {
@@ -106,7 +99,6 @@ function friendlyError(e: unknown): string {
 
 /** Create a new account with email + password and set the display name. */
 export async function signUpWithEmail(email: string, password: string, name: string): Promise<AuthResult> {
-  if (!isFirebaseConfigured) return { success: true, user: mockUser(email, name) };
   try {
     const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
     if (name) await updateProfile(cred.user, { displayName: name });
@@ -118,7 +110,6 @@ export async function signUpWithEmail(email: string, password: string, name: str
 
 /** Sign in an existing account with email + password. */
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
-  if (!isFirebaseConfigured) return { success: true, user: mockUser(email) };
   try {
     const cred = await signInWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
     return { success: true, user: mapUser(cred.user) };
@@ -129,7 +120,6 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 /** Send a password-reset email. */
 export async function sendPasswordReset(email: string): Promise<AuthResult> {
-  if (!isFirebaseConfigured) return { success: true };
   try {
     await sendPasswordResetEmail(getFirebaseAuth(), email.trim());
     return { success: true };
@@ -140,7 +130,6 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
 
 /** Sign in to Firebase using a Google OAuth id_token (from the native Google Sign-In SDK). */
 export async function signInWithGoogleCredential(idToken: string): Promise<AuthResult> {
-  if (!isFirebaseConfigured) return { success: true, user: mockUser() };
   try {
     const credential = GoogleAuthProvider.credential(idToken);
     const res = await signInWithCredential(getFirebaseAuth(), credential);
@@ -155,16 +144,10 @@ export async function signInWithGoogleCredential(idToken: string): Promise<AuthR
  * (or null) and on every sign-in/out. Returns an unsubscribe function.
  */
 export function subscribeToAuth(cb: (user: AuthUser | null) => void): () => void {
-  if (!isFirebaseConfigured) {
-    // No Firebase: report "not signed in" once and do nothing further.
-    cb(null);
-    return () => {};
-  }
   return onAuthStateChanged(getFirebaseAuth(), u => cb(u ? mapUser(u) : null));
 }
 
 export async function signOut(): Promise<void> {
-  if (!isFirebaseConfigured) return;
   try {
     await firebaseSignOut(getFirebaseAuth());
   } catch (error) {
@@ -184,9 +167,6 @@ export async function sendPhoneOTP(
   phoneNumber: string,
 ): Promise<{ success: boolean; verificationId?: string; error?: string }> {
   try {
-    if (!firebaseConfig.apiKey) {
-      return { success: true, verificationId: 'mock-verification-id-' + Date.now() };
-    }
     const authInstance = getFirebaseAuth();
     const { RecaptchaVerifier } = await import('firebase/auth');
     const recaptchaVerifier = new RecaptchaVerifier(authInstance, 'recaptcha-container', {
@@ -196,7 +176,7 @@ export async function sendPhoneOTP(
     return { success: true, verificationId: 'firebase-session' };
   } catch (error: unknown) {
     console.error('sendPhoneOTP error:', error);
-    return { success: true, verificationId: 'mock-verification-id-' + Date.now() };
+    return { success: false, error: friendlyError(error) };
   }
 }
 
@@ -205,9 +185,6 @@ export async function confirmPhoneOTP(
   code: string,
 ): Promise<{ success: boolean; user?: { uid: string; phoneNumber: string | null }; error?: string }> {
   try {
-    if (verificationId.startsWith('mock-')) {
-      return { success: true, user: { uid: 'mock-uid-' + Date.now(), phoneNumber: null } };
-    }
     if (_confirmationResult) {
       const result = await _confirmationResult.confirm(code);
       return { success: true, user: { uid: result.user.uid, phoneNumber: result.user.phoneNumber } };

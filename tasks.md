@@ -157,11 +157,12 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
 3-step progressive profile setup (B-1/B-2/B-3).
 
 - [ ] **(P0) Phone OTP is dormant** (§4.2 — PRD: "critical for Nigerian
-      farmers"): `sendPhoneOTP`/`confirmPhoneOTP` return
-      `mock-verification-id`; reCAPTCHA web-only in Expo Go. Needs dev-build
-      native Firebase phone auth.
-- [ ] **(P1) Firebase mock mode** — when unconfigured, `mockUser()` makes
-      *any* email/password succeed (`firebase.ts`). Require prod config.
+      farmers"): reCAPTCHA web-only in Expo Go. Needs dev-build native
+      Firebase phone auth.
+- [x] **(P1) Firebase mock mode** — *(resolved 2026-07-10: mock mode removed
+      entirely — `mockUser()`, `isFirebaseConfigured`, and the phone-OTP
+      `mock-verification-id` branches deleted; Firebase config is mandatory
+      and auth calls fail honestly without it.)*
 - [ ] **(P1) Google sign-in** (§4.2): needs dev build + native
       `@react-native-google-signin`; non-functional in Expo Go.
 - [ ] **(P1) Email verification not enforced** (A-4d): no "check your inbox"
