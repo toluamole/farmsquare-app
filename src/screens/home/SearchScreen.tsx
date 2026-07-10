@@ -1,36 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, FlatList } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
-import { useGetProductsQuery } from '../../store/api/wooApi';
+import { useBrowseProductsInfiniteQuery } from '../../store/api/wooApi';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addRecentSearch, clearRecentSearches } from '../../store/slices/searchSlice';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import FsGridCard from '../../components/common/FsGridCard';
 import FsChip from '../../components/common/FsChip';
 import FsEmpty from '../../components/common/FsEmpty';
 import Icon from '../../components/common/Icon';
 import { useApp } from '../../context/AppContext';
 
+// Curated suggestions until search analytics exist to drive real trending terms.
 const TRENDING = ['NPK fertilizer', 'Drip irrigation', 'Tomato seeds', 'Knapsack sprayer', 'Maize seeds', 'Herbicide'];
-const RECENT_SEARCHES = ['Cobra F1 tomato', 'Urea 50kg', 'Solar pump'];
 
 export default function SearchScreen({ navigation }: { navigation: any }) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const app = useApp();
-  const { data: products = [] } = useGetProductsQuery();
+  const dispatch = useAppDispatch();
+  const recentSearches = useAppSelector(s => s.search.recent);
+
+  const debouncedQuery = useDebouncedValue(query.trim(), 400);
+  const hasQuery = debouncedQuery.length > 0;
+
+  // Server-side search over the full catalog (WC `search` param via the Worker).
+  const {
+    data, isFetching, isError,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useBrowseProductsInfiniteQuery({ search: debouncedQuery }, { skip: !hasQuery });
+
+  const results = data?.pages.flatMap(p => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+  // Pad to an even length so a lone item in the last row keeps card width.
+  const gridData = results.length % 2 === 1 ? [...results, null] : results;
+  const searching = query.trim().length > 0 && (query.trim() !== debouncedQuery || (isFetching && !data));
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  const results = query.trim().length > 0
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.cat.toLowerCase().includes(query.toLowerCase()) ||
-        p.desc.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
-
-  const hasQuery = query.trim().length > 0;
+  const submitSearch = (term: string) => {
+    setQuery(term);
+    dispatch(addRecentSearch(term));
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['top']}>
@@ -48,6 +62,7 @@ export default function SearchScreen({ navigation }: { navigation: any }) {
             placeholderTextColor={colors.faint}
             value={query}
             onChangeText={setQuery}
+            onSubmitEditing={() => query.trim() && dispatch(addRecentSearch(query))}
             autoCapitalize="none"
             returnKeyType="search"
           />
@@ -59,19 +74,19 @@ export default function SearchScreen({ navigation }: { navigation: any }) {
         </View>
       </View>
 
-      {!hasQuery ? (
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      {!query.trim() ? (
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Recent searches */}
-          {RECENT_SEARCHES.length > 0 && (
+          {recentSearches.length > 0 && (
             <View className="px-4 pt-4 pb-1">
               <View className="flex-row items-center justify-between mb-[10px]">
                 <Text className="font-m-bold text-[14px] text-ink">Recent Searches</Text>
-                <Pressable>
+                <Pressable onPress={() => dispatch(clearRecentSearches())}>
                   <Text className="font-p-medium text-[12px] text-green">Clear</Text>
                 </Pressable>
               </View>
-              {RECENT_SEARCHES.map((s, i) => (
-                <Pressable key={i} className="flex-row items-center py-3 border-b border-line gap-3" onPress={() => setQuery(s)}>
+              {recentSearches.map((s, i) => (
+                <Pressable key={i} className="flex-row items-center py-3 border-b border-line gap-3" onPress={() => submitSearch(s)}>
                   <Icon name="Clock" size={15} color={colors.faint} />
                   <Text className="flex-1 font-p-regular text-[13px] text-ink">{s}</Text>
                   <Icon name="ArrowUpRight" size={15} color={colors.faint} />
@@ -85,7 +100,7 @@ export default function SearchScreen({ navigation }: { navigation: any }) {
             <Text className="font-m-bold text-[14px] text-ink">Trending Now</Text>
             <View className="flex-row flex-wrap gap-2 mt-2">
               {TRENDING.map((t, i) => (
-                <FsChip key={i} label={t} onPress={() => setQuery(t)} small />
+                <FsChip key={i} label={t} onPress={() => submitSearch(t)} small />
               ))}
             </View>
           </View>
@@ -105,30 +120,58 @@ export default function SearchScreen({ navigation }: { navigation: any }) {
             <Icon name="ChevronRight" size={20} color={colors.faint} />
           </Pressable>
         </ScrollView>
+      ) : searching ? (
+        <View className="py-12 items-center">
+          <ActivityIndicator color={colors.green} />
+          <Text className="font-p-regular text-[12px] text-sub mt-2">Searching…</Text>
+        </View>
+      ) : isError ? (
+        <FsEmpty
+          icon="box"
+          title="Couldn't search"
+          sub="We couldn't reach the store. Check your connection and try again."
+        />
       ) : results.length === 0 ? (
         <FsEmpty
           icon="search"
           title="No results found"
-          sub={`We couldn't find products for "${query}". Try different keywords.`}
+          sub={`We couldn't find products for "${debouncedQuery}". Try different keywords.`}
           action="Diagnose a farm problem"
           onAction={() => navigation.navigate('Diagnose')}
         />
       ) : (
         <FlatList
-          data={results}
-          keyExtractor={item => item.id}
+          data={gridData}
+          keyExtractor={(item, i) => (item ? item.id : `spacer-${i}`)}
           numColumns={2}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 16, gap: 10 }}
           columnWrapperStyle={{ gap: 10 }}
-          renderItem={({ item }) => (
-            <FsGridCard
-              p={item}
-              onOpen={() => navigation.navigate('Product', { id: item.id })}
-              onAdd={() => app.addToCart(item)}
-            />
-          )}
+          onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
+          onEndReachedThreshold={0.5}
+          renderItem={({ item }) =>
+            item ? (
+              <FsGridCard
+                p={item}
+                onOpen={() => {
+                  dispatch(addRecentSearch(query));
+                  navigation.navigate('Product', { id: item.id });
+                }}
+                onAdd={() => app.addToCart(item)}
+              />
+            ) : (
+              <View className="flex-1" />
+            )
+          }
           ListHeaderComponent={
-            <Text className="font-p-regular text-[12px] text-sub mb-3">{results.length} result{results.length !== 1 ? 's' : ''}</Text>
+            <Text className="font-p-regular text-[12px] text-sub mb-3">{total.toLocaleString('en-NG')} result{total !== 1 ? 's' : ''}</Text>
+          }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View className="py-4 items-center">
+                <ActivityIndicator color={colors.green} />
+              </View>
+            ) : null
           }
         />
       )}

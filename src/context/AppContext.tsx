@@ -120,7 +120,8 @@ export function useApp() {
     reservations,
     reserve,
 
-    // Deals — no Group Buy backend yet; empty until wired (see services/groupbuy).
+    // Deals — no Group Buy backend yet; empty until the Group Buy API lands
+    // on the farmsquare-api Worker (tasks.md §5.3).
     deals: [] as Deal[],
     t0,
 

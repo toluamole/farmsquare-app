@@ -1,8 +1,7 @@
 /**
- * Farm-problem diagnosis data layer. The problem-type taxonomy below is static
- * UI config. Actual diagnosis and the common-problems library require a backend
- * (model/API) that does not exist yet, so `diagnose()` and `getCommonProblems()`
- * return empty and the UI shows empty states. Wire these up later.
+ * Farm-problem taxonomy and diagnosis types. The category list is static UI
+ * config (kept intentionally); actual diagnosis results and the
+ * common-problems library require the advisory backend (tasks.md, PRD §6.2).
  */
 
 export interface ProblemCategory {
@@ -32,27 +31,4 @@ export interface Diagnosis {
   prevention: string;
   products: string[];
   cost: [number, number];
-}
-
-export interface DiagnoseInput {
-  crop: string;
-  category: string;
-  description: string;
-}
-
-export async function diagnose(_input: DiagnoseInput): Promise<Diagnosis[]> {
-  // TODO: call the diagnosis backend (model/API). Not implemented yet → empty.
-  return [];
-}
-
-export interface CommonProblem {
-  icon: string; // Ionicons name
-  title: string;
-  sub: string;
-  crops: string;
-}
-
-export async function getCommonProblems(): Promise<CommonProblem[]> {
-  // TODO: fetch the common-problems library from backend. None yet → empty.
-  return [];
 }

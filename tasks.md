@@ -5,9 +5,10 @@ Backlog derived from a codebase audit against **Farmsquare Mobile App PRD v1.1
 screen ID (`E-3`) from the PRD's User Flow Documentation (§14).
 
 **Verdict:** ~48 of the PRD's 50 Phase 1 screens exist as UI, but only the
-Store pillar is functionally live. Group Buy and Advisory have no backend, and
-the transactional core (payments, real orders, push) is missing. Today this is
-a high-fidelity Phase 1 prototype, not a launchable Phase 1.
+Store pillar is functionally live (catalog + real orders via the
+farmsquare-api Worker). Group Buy and Advisory have no backend, and payments
+and push are missing. Today this is a high-fidelity Phase 1 prototype, not a
+launchable Phase 1.
 
 Legend: `[x]` done · `[ ]` open · **(P0/P1/P2)** launch priority ·
 *(PRD Phase 2)* = deferred by the PRD itself, listed for traceability.
@@ -32,22 +33,33 @@ Legend: `[x]` done · `[ ]` open · **(P0/P1/P2)** launch priority ·
       for now per decision. Provider integration (charge flow, `markOrderPaid`
       wiring, server-side verification) resumes once a payment provider is
       re-selected.
-- [ ] **(P0) Order creation is mock** (§5.1 `/orders`). Read-only WC keys →
-      `createOrder` 401 → random local `FS-#####` id. Provision write keys;
-      confirm real orders land in WooCommerce.
+- [x] **(P0) Order creation is real** (§5.1 `/orders`) — resolved 2026-07-06.
+      The key pair was Read/Write all along (earlier 401s were the Cloudflare
+      bot-challenge era); orders placed in the app land in WooCommerce admin
+      via the Worker. Keys rotated (old bundle-exposed pair revoked) and the
+      `tryApi` silent mock fallback removed — order failures now surface.
 - [ ] **(P1) Product detail dead spots** (F-3): related-products carousel maps
       ids through the stubbed `fsProduct` (`ProductScreen.tsx:67`) so it's
       always empty; Group Buy cross-sell callout has no data source
       (`p.deal`). Wire related products from WC `related_ids` and the callout
       from the Group Buy API once it exists.
-- [ ] **(P1) Listing gaps** (§5.2.2, F-2): no server-side pagination /
-      infinite scroll (single `per_page: 50` fetch, client-side filtering);
-      no brand filter; no grid/list toggle. PRD wants WC API paging +
-      skeleton loaders.
-- [ ] **(P1) Search** (F-7): client-side over the loaded list — PRD wants
-      debounced server search + autocomplete. `TRENDING` / `RECENT_SEARCHES`
-      in `SearchScreen.tsx:12-13` are still hardcoded mock (survived the mock
-      purge): recent should come from AsyncStorage, trending from backend.
+- [x] **(P1) Listing pagination + server filters** (§5.2.2, F-2) — resolved
+      2026-07-07. `browseProducts` infinite query (RTK `builder.infiniteQuery`,
+      20/page, totals from the `X-WP-Total*` headers the Worker forwards);
+      Listing is a `FlatList` with infinite scroll and all filter/sort as WC
+      query params (`category` by numeric id, `on_sale`, `stock_status`,
+      `max_price`, `orderby`). Home/Shop rails are dedicated server queries
+      (`on_sale` / popularity / date) instead of slices of one page.
+- [ ] **(P1) Listing gaps — remainder** (§5.2.2, F-2): brand filter and
+      grid/list toggle (needs a WC brand-taxonomy decision); skeleton loaders
+      (spinners today).
+- [x] **(P1) Search** (F-7) — server search resolved 2026-07-07: debounced
+      (400ms) WC `search` param over the full catalog with paginated results;
+      recent searches persisted in `searchSlice` (redux-persist) with a
+      working Clear. Remainder below.
+- [ ] **(P2) Search remainder** (F-7): autocomplete suggestions and
+      backend-driven trending terms (`TRENDING` in `SearchScreen.tsx` is
+      curated static until search analytics exist).
 - [ ] **(Decision) Local Redux cart vs CoCart** (§5.1). PRD calls CoCart
       "critical" for web↔app cart sync; app deliberately uses a local
       persisted cart. Sign off the deviation or adopt CoCart.
@@ -64,9 +76,11 @@ Legend: `[x]` done · `[ ]` open · **(P0/P1/P2)** launch priority ·
 ## Pillar 2 — Group Buy (§5.3, Flow E) — flagship gap, 0% functional
 
 All screens exist (E-1 deal listing, E-3 detail, E-4 quantity, E-5/E-6
-checkout + confirmation, E-7 reservation detail) and render empty states via
-the typed stub `src/services/groupbuy.ts` (`getDeals()` → `[]`,
-`reserveDeal()` throws). Everything below is backend + wiring:
+checkout + confirmation, E-7 reservation detail) and render empty states
+(`AppContext.deals` is empty; the interim service stub was removed
+2026-07-06 — the client layer will be RTK Query endpoints against the
+farmsquare-api Worker, like the catalog). Everything below is backend +
+wiring:
 
 - [ ] **(P0) Custom Group Buy API** (§5.3.10): deals, reservations, fill
       tracking, closure logic (`group_buy_deals`, `group_buy_reservations`,
@@ -95,8 +109,9 @@ the typed stub `src/services/groupbuy.ts` (`getDeals()` → `[]`,
 ## Pillar 3 — Farm Advisory (§6, Flows G/H)
 
 ### Crop Calendar (§6.1, Flow G)
-UI built (MyFarm G-1, Journey G-3, Activity G-4) with empty states via
-`src/services/advisory.ts` stubs.
+UI built (MyFarm G-1, Journey G-3, Activity G-4) rendering empty states
+directly (stub service removed 2026-07-06; guide types + `cropLabel` live in
+`src/data/crops.ts`).
 
 - [ ] **(P0) 5-crop agronomist content** (§6.1.2, PRD Phase 1 item #7:
       Tomato, Maize, Pepper, Sesame, Cucumber as *static agronomist-built
@@ -115,8 +130,9 @@ UI built (MyFarm G-1, Journey G-3, Activity G-4) with empty states via
 - [ ] Adaptive calendar / weather adjustments (§6.1.4 AI) — *(PRD Phase 2)*.
 
 ### Problem Solver (§6.2, Flow H)
-Flow screens built (H-1 → H-4a); fake 3.5s "AI analysis" removed —
-`diagnose()`/`getCommonProblems()` in `src/services/diagnosis.ts` return empty.
+Flow screens built (H-1 → H-4a); fake 3.5s "AI analysis" removed. Stub
+service removed 2026-07-06 — Analyzing hands off to Results' no-matches
+state; taxonomy + `Diagnosis` types live in `src/data/problems.ts`.
 
 - [ ] **(P0) FAQ/symptom database** (§6.2.1, H-5, PRD Phase 1 item #9): top
       50 problems with solutions + product links, browsable/searchable list.
@@ -164,10 +180,14 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
 - [ ] **(P0) Push notifications — FCM** (PRD Phase 1 item #10): daily
       activity reminders, Group Buy alerts, order updates; in-app inbox
       persistence so J-1 reflects missed pushes. Nothing is wired
-      (`src/services/notifications.ts` stub returns `[]`).
-- [ ] **(P0) WooCommerce write keys** for real orders (currently read-only).
-- [ ] **(P0) Cloudflare bot-fight** properly disabled for prod (currently
-      paused as a temp workaround).
+      (nothing is wired; the inbox renders its empty state — stub service
+      removed 2026-07-06).
+- [x] **(P0) WooCommerce write keys** — resolved 2026-07-06: Read/Write pair
+      rotated and held only in Worker secrets; real orders confirmed landing.
+- [x] **(P0) Cloudflare bot-fight** — resolved 2026-07-05: zone un-paused and
+      Bot Fight Mode enabled. App traffic routes via the farmsquare-api
+      Worker (workers.dev, outside the zone's bot checks); Worker→origin
+      fetches verified passing (200), direct keyless API calls now 401.
 - [ ] **(P1) Firestore (or equivalent) profile/crop/notification sync** —
       everything is local redux-persist; nothing survives reinstall or syncs
       across devices/web.
@@ -222,7 +242,7 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
   local logic, not WooCommerce shipping zones/rates. (Kept: logic, not mock.)
 - **Geography / crops** — `FS_STATES`, `FS_LGAS`, `FS_CROPS` static lists.
   (Kept: legitimate static reference data.)
-- **Problem-type taxonomy** — static UI config in `services/diagnosis.ts`.
+- **Problem-type taxonomy** — static UI config in `src/data/problems.ts`.
 
 ## Completed (mock-data removal, July 2026)
 

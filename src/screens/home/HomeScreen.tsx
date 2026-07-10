@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 import { useApp } from '../../context/AppContext';
 import { useGetProductsQuery, useGetCategoriesQuery } from '../../store/api/wooApi';
+import { Category } from '../../data/products';
 import { Deal } from '../../data/deals';
 // import FsCarousel from '../../components/common/FsCarousel';
 // import AdSlide from '../../components/common/AdSlide';
@@ -60,14 +61,40 @@ function DealCard({ deal, onPress, t0 }: { deal: Deal; onPress: () => void; t0: 
   );
 }
 
+// A horizontal product rail for one category, fed by its own server query
+// (each rail is a cheap 8-item fetch; RTK caches per category id).
+function CategoryRail({ cat, navigation }: { cat: Category; navigation: any }) {
+  const { data: products = [] } = useGetProductsQuery({ category: cat.wcId, orderby: 'popularity', per_page: 8 });
+  if (products.length === 0) return null;
+
+  return (
+    <>
+      <View className="flex-row items-center justify-between px-4 mb-3">
+        <Text className="font-m-bold text-[15px] text-ink">{cat.label}</Text>
+        <Pressable onPress={() => navigation.navigate('Listing', { cat: cat.id })}>
+          <Text className="font-p-medium text-[12px] text-green">See all →</Text>
+        </Pressable>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4 gap-[10px] pb-1 mb-6">
+        {products.map(p => (
+          <FsMiniCard key={p.id} p={p} onOpen={() => navigation.navigate('Product', { id: p.id })} />
+        ))}
+      </ScrollView>
+    </>
+  );
+}
+
 export default function HomeScreen({ navigation }: { navigation: any }) {
   const app = useApp();
   const { auth, cartCount, cropSetup, t0 } = app;
 
-  const { data: products = [] } = useGetProductsQuery();
   // Live WooCommerce categories (live-only; empty when WC is unavailable).
   const { data: categories = [] } = useGetCategoriesQuery();
-  const flashProducts = products.filter(p => p.was);
+  // Server-side sale query — the catalog is 1,300+ products, so filtering a
+  // single fetched page would miss most deals. Deduped with ShopScreen's call.
+  const { data: flashProducts = [] } = useGetProductsQuery({ on_sale: true, per_page: 10 });
+  // Biggest categories get their own product rail below Flash Deals.
+  const railCategories = [...categories].sort((a, b) => b.count - a.count).slice(0, 4);
 
 //   const heroSlides = [
 //     <AdSlide key="s1" eyebrow="WET SEASON READY" title="Seeds & Irrigation for Wet Season" sub="Cobra F1, drip kits and more" cta="Shop Now" icon="CloudRain" onPress={() => navigation.navigate('Search')} />,
@@ -202,6 +229,11 @@ export default function HomeScreen({ navigation }: { navigation: any }) {
             <FsMiniCard key={p.id} p={p} onOpen={() => navigation.navigate('Product', { id: p.id })} />
           ))}
         </ScrollView>
+
+        {/* Category rails */}
+        {railCategories.map(cat => (
+          <CategoryRail key={cat.id} cat={cat} navigation={navigation} />
+        ))}
 
         <View style={{ height: 32 }} />
       </ScrollView>

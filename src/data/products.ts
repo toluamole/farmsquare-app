@@ -20,6 +20,10 @@ export interface Category {
   id: string;
   label: string;
   icon: string;
+  /** Numeric WooCommerce term id — required for server-side `category` filtering. */
+  wcId: number;
+  /** Product count in this category (used to rank rails on the home screen). */
+  count: number;
 }
 
 // The catalog is live (WooCommerce). Related/recommended product lookups by id

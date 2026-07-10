@@ -9,7 +9,7 @@ import { FS_CROPS, fsProduct } from '../../data/products';
 import FsButton from '../../components/common/FsButton';
 import FsBadge from '../../components/common/FsBadge';
 import ScreenHeader from '../../components/layout/ScreenHeader';
-import { PROBLEM_CATEGORIES, Diagnosis } from '../../services/diagnosis';
+import { PROBLEM_CATEGORIES, Diagnosis } from '../../data/problems';
 
 const naira = (n: number) => '₦' + n.toLocaleString('en-NG');
 

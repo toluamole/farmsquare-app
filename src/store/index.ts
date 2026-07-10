@@ -10,6 +10,7 @@ import orders from './slices/ordersSlice';
 import reservations from './slices/reservationsSlice';
 import addresses from './slices/addressesSlice';
 import recent from './slices/recentSlice';
+import search from './slices/searchSlice';
 import ui from './slices/uiSlice';
 import { wooApi } from './api/wooApi';
 
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   reservations,
   addresses,
   recent,
+  search,
   ui,
   [wooApi.reducerPath]: wooApi.reducer,
 });
@@ -30,7 +32,7 @@ const persistConfig = {
   version: 1,
   storage: AsyncStorage,
   // Persist domain state only — never the API cache or transient UI (toasts).
-  whitelist: ['auth', 'profile', 'cart', 'orders', 'reservations', 'addresses', 'recent'],
+  whitelist: ['auth', 'profile', 'cart', 'orders', 'reservations', 'addresses', 'recent', 'search'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

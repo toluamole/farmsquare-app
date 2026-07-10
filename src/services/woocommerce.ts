@@ -62,15 +62,6 @@ export interface WCOrder {
   payment_method_title?: string;
 }
 
-async function tryApi<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    console.warn('WooCommerce API unavailable, using mock data', error);
-    return fallback;
-  }
-}
-
 export function mapProduct(p: WCProduct): Product {
   return {
     id: String(p.id),
@@ -93,46 +84,43 @@ export function mapProduct(p: WCProduct): Product {
 // Catalog (products/categories) is read directly by the RTK Query fetchBaseQuery
 // in src/store/api/wooApi.ts — see mapProduct above for WC → app mapping.
 
+// Orders are real WooCommerce orders (write-capable key held in the Worker).
+// Errors propagate: RTK Query surfaces them and checkout aborts with a toast —
+// never fake a success.
 export async function createOrder(order: WCOrder): Promise<{ id: string; status: string }> {
-  return tryApi(async () => {
-    const client = getClient();
-    const response = await client.post<{ id: number; status: string }>('/orders', order);
-    return { id: `FS-${String(response.data.id).padStart(5, '0')}`, status: response.data.status };
-  }, { id: `FS-${Math.floor(20000 + Math.random() * 9999)}`, status: 'pending' });
+  const client = getClient();
+  const response = await client.post<{ id: number; status: string }>('/orders', order);
+  return { id: `FS-${String(response.data.id).padStart(5, '0')}`, status: response.data.status };
 }
 
 /**
- * Mark an existing order as paid (used after a successful Paystack charge).
- * NOTE (MVP): payment is confirmed client-side. A hardened version should
- * verify the transaction via Paystack's verify API from a backend before this.
+ * Mark an existing order as paid (for when a payment provider is wired).
+ * NOTE: a hardened version must verify the transaction server-side (Worker)
+ * before calling this — never trust a client-side payment confirmation.
  */
 export async function markOrderPaid(
   id: string,
   opts: { transactionRef?: string; status?: string } = {},
 ): Promise<{ id: string; status: string }> {
   const status = opts.status || 'processing';
-  return tryApi(async () => {
-    const client = getClient();
-    const numericId = String(parseInt(id.replace('FS-', ''), 10));
-    const response = await client.put<{ id: number; status: string }>(`/orders/${numericId}`, {
-      set_paid: true,
-      status,
-      ...(opts.transactionRef
-        ? {
-            transaction_id: opts.transactionRef,
-            meta_data: [{ key: '_paystack_reference', value: opts.transactionRef }],
-          }
-        : {}),
-    });
-    return { id, status: response.data.status };
-  }, { id, status });
+  const client = getClient();
+  const numericId = String(parseInt(id.replace('FS-', ''), 10));
+  const response = await client.put<{ id: number; status: string }>(`/orders/${numericId}`, {
+    set_paid: true,
+    status,
+    ...(opts.transactionRef
+      ? {
+          transaction_id: opts.transactionRef,
+          meta_data: [{ key: '_payment_reference', value: opts.transactionRef }],
+        }
+      : {}),
+  });
+  return { id, status: response.data.status };
 }
 
-export async function getOrder(id: string): Promise<WCOrder & { id: string; status: string } | null> {
-  return tryApi(async () => {
-    const client = getClient();
-    const numericId = id.replace('FS-', '');
-    const response = await client.get<WCOrder & { id: number; status: string }>(`/orders/${numericId}`);
-    return { ...response.data, id } as WCOrder & { id: string; status: string };
-  }, null);
+export async function getOrder(id: string): Promise<WCOrder & { id: string; status: string }> {
+  const client = getClient();
+  const numericId = id.replace('FS-', '');
+  const response = await client.get<WCOrder & { id: number; status: string }>(`/orders/${numericId}`);
+  return { ...response.data, id } as WCOrder & { id: string; status: string };
 }

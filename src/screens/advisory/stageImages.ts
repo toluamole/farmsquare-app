@@ -1,6 +1,6 @@
 // Static require map for advisory stage illustrations.
-// Keys match the `img` field on JourneyStage entries served by
-// src/services/advisory.ts (crop journey + poultry stage illustrations).
+// Keys match the `img` field on JourneyStage entries (src/data/crops.ts) once
+// the advisory backend serves crop journey + poultry stage guides.
 
 export const STAGE_IMAGES: Record<string, any> = {
   // Crop journey stages
