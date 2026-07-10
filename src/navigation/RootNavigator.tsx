@@ -12,7 +12,7 @@ import ProfileSizeScreen from '../screens/onboarding/ProfileSizeScreen';
 import MainTabs from './MainTabs';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { signIn, signOut } from '../store/slices/authSlice';
-import { subscribeToAuth, isFirebaseConfigured } from '../services/firebase';
+import { subscribeToAuth } from '../services/firebase';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -25,12 +25,9 @@ export default function RootNavigator() {
   const authRef = useRef(auth);
   authRef.current = auth;
 
-  // When Firebase isn't configured we rely entirely on persisted Redux state,
-  // so the gate is already "resolved" on first render.
-  const [resolved, setResolved] = useState(!isFirebaseConfigured);
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
     const unsub = subscribeToAuth(user => {
       if (user) {
         // Sync the restored/Firebase session into Redux.
