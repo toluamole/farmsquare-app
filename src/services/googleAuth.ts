@@ -35,6 +35,20 @@ interface UseGoogleAuthOptions {
  *   const { promptGoogle, ready } = useGoogleAuth({ onSuccess, onError });
  *   <FsButton onPress={promptGoogle} disabled={!ready} ... />
  */
+/**
+ * Clear the native Google Sign-In session. Must run on app sign-out —
+ * otherwise Credential Manager auto-signs the previous account back in
+ * without showing the account chooser on the next sign-in.
+ */
+export async function signOutGoogle(): Promise<void> {
+  if (!isGoogleConfigured) return;
+  try {
+    await GoogleSignin.signOut();
+  } catch (error) {
+    console.error('signOutGoogle error:', error);
+  }
+}
+
 export function useGoogleAuth({ onSuccess, onError }: UseGoogleAuthOptions) {
   const promptGoogle = async () => {
     try {

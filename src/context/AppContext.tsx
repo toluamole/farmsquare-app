@@ -8,6 +8,7 @@ import { Deal } from '../data/deals';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { signIn as signInAction, signOut as signOutAction, browseAsGuest as browseAsGuestAction } from '../store/slices/authSlice';
 import { signOut as firebaseSignOut } from '../services/firebase';
+import { signOutGoogle } from '../services/googleAuth';
 import { setProfile as setProfileAction, finishSetup as finishSetupAction } from '../store/slices/profileSlice';
 import { addItem, removeItem, setItemQty, clearCart as clearCartAction } from '../store/slices/cartSlice';
 import { addOrder } from '../store/slices/ordersSlice';
@@ -95,7 +96,7 @@ export function useApp() {
     // Auth
     auth: auth as AuthState,
     signIn: (user: { name: string; phone?: string; email?: string; uid?: string }) => dispatch(signInAction(user)),
-    signOut: () => { firebaseSignOut(); dispatch(signOutAction()); dispatch(clearCartAction()); },
+    signOut: () => { firebaseSignOut(); signOutGoogle(); dispatch(signOutAction()); dispatch(clearCartAction()); },
     browseAsGuest: () => dispatch(browseAsGuestAction()),
 
     // Profile
