@@ -153,12 +153,14 @@ state; taxonomy + `Diagnosis` types live in `src/data/problems.ts`.
 ## Auth & Onboarding (§4, Flows A–C)
 
 Done: splash (A-1), carousel (A-2), auth gate (A-3), email sign-up/login +
-forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
-3-step progressive profile setup (B-1/B-2/B-3).
+forgot password (A-4b/A-5/A-6), guest mode, 3-step progressive profile
+setup (B-1/B-2/B-3).
 
-- [ ] **(P0) Phone OTP is dormant** (§4.2 — PRD: "critical for Nigerian
-      farmers"): reCAPTCHA web-only in Expo Go. Needs dev-build native
-      Firebase phone auth.
+- [x] **(P0) Phone OTP is dormant** (§4.2) — *(dropped 2026-07-12: phone OTP
+      is no longer planned — email verification (A-4d) covers account
+      confirmation; deleted the dormant PhoneScreen/OtpScreen and the
+      firebase.ts phone helpers. Revisit only if PRD's phone-first login
+      returns, which would need dev-build native Firebase auth.)*
 - [x] **(P1) Firebase mock mode** — *(resolved 2026-07-10: mock mode removed
       entirely — `mockUser()`, `isFirebaseConfigured`, and the phone-OTP
       `mock-verification-id` branches deleted; Firebase config is mandatory
