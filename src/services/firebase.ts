@@ -14,9 +14,6 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
   onAuthStateChanged,
-  signInWithPhoneNumber,
-  ConfirmationResult,
-  PhoneAuthProvider,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -194,48 +191,6 @@ export async function signOut(): Promise<void> {
     await firebaseSignOut(getFirebaseAuth());
   } catch (error) {
     console.error('signOut error:', error);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Phone OTP (dormant). Firebase JS SDK phone auth needs a web-only reCAPTCHA,
-// so this path does not work in Expo Go. Kept for a possible future dev-build
-// migration to @react-native-firebase/auth. Not used by the current flow.
-// ---------------------------------------------------------------------------
-
-let _confirmationResult: ConfirmationResult | null = null;
-
-export async function sendPhoneOTP(
-  phoneNumber: string,
-): Promise<{ success: boolean; verificationId?: string; error?: string }> {
-  try {
-    const authInstance = getFirebaseAuth();
-    const { RecaptchaVerifier } = await import('firebase/auth');
-    const recaptchaVerifier = new RecaptchaVerifier(authInstance, 'recaptcha-container', {
-      size: 'invisible',
-    });
-    _confirmationResult = await signInWithPhoneNumber(authInstance, phoneNumber, recaptchaVerifier);
-    return { success: true, verificationId: 'firebase-session' };
-  } catch (error: unknown) {
-    console.error('sendPhoneOTP error:', error);
-    return { success: false, error: friendlyError(error) };
-  }
-}
-
-export async function confirmPhoneOTP(
-  verificationId: string,
-  code: string,
-): Promise<{ success: boolean; user?: { uid: string; phoneNumber: string | null }; error?: string }> {
-  try {
-    if (_confirmationResult) {
-      const result = await _confirmationResult.confirm(code);
-      return { success: true, user: { uid: result.user.uid, phoneNumber: result.user.phoneNumber } };
-    }
-    const credential = PhoneAuthProvider.credential(verificationId, code);
-    const result = await signInWithCredential(getFirebaseAuth(), credential);
-    return { success: true, user: { uid: result.user.uid, phoneNumber: result.user.phoneNumber } };
-  } catch (error: unknown) {
-    return { success: false, error: friendlyError(error) };
   }
 }
 

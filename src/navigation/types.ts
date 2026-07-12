@@ -84,10 +84,6 @@ export type RootStackParamList = {
   AuthGate: undefined;
   EmailAuth: { mode: 'signup' | 'login' };
   VerifyEmail: { email: string };
-  // Phone/Otp are dormant (reCAPTCHA is web-only in Expo Go) but kept so the
-  // unused screen files still type-check for a future dev-build migration.
-  Phone: undefined;
-  Otp: { phone: string };
   ProfileLoc: undefined;
   ProfileCrops: undefined;
   ProfileSize: undefined;
