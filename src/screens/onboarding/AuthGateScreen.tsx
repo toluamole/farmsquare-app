@@ -20,6 +20,7 @@ export default function AuthGateScreen({ navigation }: Props) {
       name: user.displayName || user.email?.split('@')[0] || 'Farmer',
       email: user.email || undefined,
       uid: user.uid,
+      emailVerified: user.emailVerified,
     });
     navigation.replace(cropSetup ? 'Main' : 'ProfileLoc');
   };

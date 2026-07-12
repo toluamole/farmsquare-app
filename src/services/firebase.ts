@@ -9,6 +9,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   GoogleAuthProvider,
   signInWithCredential,
@@ -67,12 +68,13 @@ export interface AuthUser {
   uid: string;
   email: string | null;
   displayName: string | null;
+  emailVerified: boolean;
 }
 
 type AuthResult = { success: boolean; user?: AuthUser; error?: string };
 
 function mapUser(u: User): AuthUser {
-  return { uid: u.uid, email: u.email, displayName: u.displayName };
+  return { uid: u.uid, email: u.email, displayName: u.displayName, emailVerified: u.emailVerified };
 }
 
 function friendlyError(e: unknown): string {
@@ -102,6 +104,9 @@ export async function signUpWithEmail(email: string, password: string, name: str
   try {
     const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
     if (name) await updateProfile(cred.user, { displayName: name });
+    // Fire-and-forget: a failed verification email shouldn't block sign-up
+    // (the VerifyEmail screen and Account row both offer a resend).
+    sendEmailVerification(cred.user).catch(e => console.error('sendEmailVerification error:', e));
     return { success: true, user: { ...mapUser(cred.user), displayName: name || cred.user.displayName } };
   } catch (e) {
     return { success: false, error: friendlyError(e) };
@@ -125,6 +130,43 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
     return { success: true };
   } catch (e) {
     return { success: false, error: friendlyError(e) };
+  }
+}
+
+/**
+ * Sync an edited display name to the Firebase user — without this, the
+ * auth-state sync on the next app start reverts the name to the old one.
+ */
+export async function updateDisplayName(displayName: string): Promise<void> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+    if (user) await updateProfile(user, { displayName });
+  } catch (e) {
+    console.error('updateDisplayName error:', e);
+  }
+}
+
+/** Email a fresh verification link to the currently signed-in user. */
+export async function sendVerificationEmail(): Promise<AuthResult> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return { success: false, error: 'You need to be signed in to do that.' };
+    await sendEmailVerification(user);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: friendlyError(e) };
+  }
+}
+
+/** Refresh the current user from Firebase and report whether their email is verified. */
+export async function reloadEmailVerified(): Promise<boolean> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+    if (!user) return false;
+    await user.reload();
+    return getFirebaseAuth().currentUser?.emailVerified ?? false;
+  } catch {
+    return false;
   }
 }
 
