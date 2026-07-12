@@ -6,7 +6,7 @@
 import { fsProduct, Product } from '../data/products';
 import { Deal } from '../data/deals';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { signIn as signInAction, signOut as signOutAction, browseAsGuest as browseAsGuestAction } from '../store/slices/authSlice';
+import { signIn as signInAction, updateAccount as updateAccountAction, signOut as signOutAction, browseAsGuest as browseAsGuestAction } from '../store/slices/authSlice';
 import { signOut as firebaseSignOut } from '../services/firebase';
 import { signOutGoogle } from '../services/googleAuth';
 import { setProfile as setProfileAction, finishSetup as finishSetupAction } from '../store/slices/profileSlice';
@@ -96,6 +96,7 @@ export function useApp() {
     // Auth
     auth: auth as AuthState,
     signIn: (user: { name: string; phone?: string; email?: string; uid?: string; emailVerified?: boolean }) => dispatch(signInAction(user)),
+    updateAccount: (update: { name?: string; phone?: string }) => dispatch(updateAccountAction(update)),
     signOut: () => { firebaseSignOut(); signOutGoogle(); dispatch(signOutAction()); dispatch(clearCartAction()); },
     browseAsGuest: () => dispatch(browseAsGuestAction()),
 

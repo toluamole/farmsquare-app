@@ -30,8 +30,9 @@ export default function AccountScreen({ navigation }: { navigation: any; route: 
   const dispatch = useAppDispatch();
 
   const signedIn = auth.signedIn;
-  const name = auth.name || 'Adaobi Okeke';
-  const phone = auth.phone || '+234 803 555 0147';
+  const name = auth.name || 'Farmer';
+  // No dummy fallback: show the real phone if set, else the account email.
+  const phone = auth.phone || auth.email || '';
   const initial = (name.trim()[0] || 'A').toUpperCase();
 
   const handleLogout = () => {

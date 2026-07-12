@@ -6,6 +6,7 @@ import ScreenHeader from '../../components/layout/ScreenHeader';
 import FsInput from '../../components/common/FsInput';
 import FsButton from '../../components/common/FsButton';
 import FsChip from '../../components/common/FsChip';
+import { updateDisplayName } from '../../services/firebase';
 
 const STATES = [
   'Lagos', 'Ogun', 'Oyo', 'Kano', 'Kaduna', 'Katsina',
@@ -20,10 +21,10 @@ const CROPS: [string, string][] = [
 const MAX_CROPS = 5;
 
 export default function EditProfileScreen({ navigation }: { navigation: any; route: any }) {
-  const { auth, profile, setProfile, toast } = useApp();
+  const { auth, profile, setProfile, updateAccount, toast } = useApp();
 
-  const [name, setName] = useState(auth.name || 'Adaobi Okeke');
-  const [phone, setPhone] = useState(auth.phone || '+234 803 555 0147');
+  const [name, setName] = useState(auth.name || '');
+  const [phone, setPhone] = useState(auth.phone || '');
   const [state, setState] = useState(profile.state || '');
   const [lga, setLga] = useState(profile.lga || '');
   const [crops, setCrops] = useState<string[]>(profile.crops || []);
@@ -39,9 +40,14 @@ export default function EditProfileScreen({ navigation }: { navigation: any; rou
     });
   };
 
-  const valid = name.trim().length > 0 && phone.replace(/\D/g, '').length >= 10;
+  // Phone is optional (no dummy default anymore) — validate only when entered.
+  const valid = name.trim().length > 0 && (!phone.trim() || phone.replace(/\D/g, '').length >= 10);
 
   const handleSave = () => {
+    updateAccount({ name: name.trim(), phone: phone.trim() });
+    // Fire-and-forget: local state is already saved; a failed Firebase sync
+    // only means the name reverts on the next cold start.
+    updateDisplayName(name.trim());
     setProfile({ state, lga: lga.trim(), crops });
     toast('Profile updated');
     navigation.goBack();

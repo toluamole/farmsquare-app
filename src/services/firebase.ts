@@ -133,6 +133,19 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
   }
 }
 
+/**
+ * Sync an edited display name to the Firebase user — without this, the
+ * auth-state sync on the next app start reverts the name to the old one.
+ */
+export async function updateDisplayName(displayName: string): Promise<void> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+    if (user) await updateProfile(user, { displayName });
+  } catch (e) {
+    console.error('updateDisplayName error:', e);
+  }
+}
+
 /** Email a fresh verification link to the currently signed-in user. */
 export async function sendVerificationEmail(): Promise<AuthResult> {
   try {
