@@ -45,11 +45,13 @@ export default function EmailAuthScreen({ navigation, route }: Props) {
       name: result.user.displayName || name.trim() || (result.user.email?.split('@')[0] ?? 'Farmer'),
       email: result.user.email || email.trim(),
       uid: result.user.uid,
+      emailVerified: result.user.emailVerified,
     });
 
-    // New sign-ups always go through profile setup. Returning users skip it
-    // if they've already completed crop setup.
-    if (isSignup || !cropSetup) navigation.replace('ProfileLoc');
+    // New sign-ups pass through the (skippable) verify-email gate before
+    // profile setup. Returning users skip setup if crop setup is done.
+    if (isSignup) navigation.replace('VerifyEmail', { email: result.user.email || email.trim() });
+    else if (!cropSetup) navigation.replace('ProfileLoc');
     else navigation.replace('Main');
   };
 

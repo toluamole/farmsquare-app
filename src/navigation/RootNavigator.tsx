@@ -6,6 +6,7 @@ import SplashScreen from '../screens/onboarding/SplashScreen';
 import SlidesScreen from '../screens/onboarding/SlidesScreen';
 import AuthGateScreen from '../screens/onboarding/AuthGateScreen';
 import EmailAuthScreen from '../screens/onboarding/EmailAuthScreen';
+import VerifyEmailScreen from '../screens/onboarding/VerifyEmailScreen';
 import ProfileLocScreen from '../screens/onboarding/ProfileLocScreen';
 import ProfileCropsScreen from '../screens/onboarding/ProfileCropsScreen';
 import ProfileSizeScreen from '../screens/onboarding/ProfileSizeScreen';
@@ -36,6 +37,7 @@ export default function RootNavigator() {
             name: user.displayName || user.email?.split('@')[0] || 'Farmer',
             email: user.email || undefined,
             uid: user.uid,
+            emailVerified: user.emailVerified,
           }),
         );
       } else if (authRef.current.signedIn && !authRef.current.guest) {
@@ -66,6 +68,7 @@ export default function RootNavigator() {
       <Stack.Screen name="Slides" component={SlidesScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="AuthGate" component={AuthGateScreen} />
       <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       <Stack.Screen name="ProfileLoc" component={ProfileLocScreen} />
       <Stack.Screen name="ProfileCrops" component={ProfileCropsScreen} />
       <Stack.Screen name="ProfileSize" component={ProfileSizeScreen} />

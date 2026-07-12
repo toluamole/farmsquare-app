@@ -165,8 +165,11 @@ forgot password (A-4b/A-5/A-6), OTP screens (A-4a/A-4c), guest mode,
       and auth calls fail honestly without it.)*
 - [ ] **(P1) Google sign-in** (§4.2): needs dev build + native
       `@react-native-google-signin`; non-functional in Expo Go.
-- [ ] **(P1) Email verification not enforced** (A-4d): no "check your inbox"
-      gate after email sign-up.
+- [x] **(P1) Email verification not enforced** (A-4d) — *(resolved
+      2026-07-12: soft gate — verification email sent at sign-up, skippable
+      VerifyEmail screen (re-check + resend w/ 60s cooldown), Account-screen
+      reminder row until verified, `emailVerified` tracked in auth state;
+      Google users arrive verified and never see either.)*
 - [ ] **(P2) Guest gating softer than spec** (C-1/C-2): PRD wants an
       auth-prompt bottom sheet on gated actions with the "deep return"
       pattern (complete the intended action after login), and a blurred

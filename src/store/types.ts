@@ -57,4 +57,6 @@ export interface AuthState {
   phone?: string;
   email?: string;
   uid?: string;
+  /** Firebase email-verification status; undefined until the first auth sync. */
+  emailVerified?: boolean;
 }

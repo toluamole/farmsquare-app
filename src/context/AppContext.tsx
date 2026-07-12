@@ -95,7 +95,7 @@ export function useApp() {
   return {
     // Auth
     auth: auth as AuthState,
-    signIn: (user: { name: string; phone?: string; email?: string; uid?: string }) => dispatch(signInAction(user)),
+    signIn: (user: { name: string; phone?: string; email?: string; uid?: string; emailVerified?: boolean }) => dispatch(signInAction(user)),
     signOut: () => { firebaseSignOut(); signOutGoogle(); dispatch(signOutAction()); dispatch(clearCartAction()); },
     browseAsGuest: () => dispatch(browseAsGuestAction()),
 
